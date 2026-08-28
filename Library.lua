@@ -29,7 +29,8 @@ local Library = {
         Search      = "rbxassetid://10734943674",
         Shield      = "rbxassetid://10734951847",
         Code        = "rbxassetid://10709810463",
-        Crystal     = "rbxassetid://7734053426"
+        Crystal     = "rbxassetid://7734053426",
+        Save        = "rbxassetid://10734950309" -- Backup save icon
     },
     Registry = {},
     Connections = {},
@@ -41,6 +42,7 @@ local UIS = game:GetService("UserInputService")
 local RS = game:GetService("RunService")
 local Players = game:GetService("Players")
 local TextService = game:GetService("TextService")
+local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
 -- ========================================== --
@@ -171,7 +173,6 @@ function Library:CreateWindow(titleText)
 
     local ContentContainer = Create("Frame", { Size = UDim2.new(1, -190, 1, 0), Position = UDim2.new(0, 190, 0, 0), BackgroundTransparency = 1, Parent = MainFrame })
 
-    -- Search Bar Setup
     local TopBar = Create("Frame", { Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Parent = ContentContainer })
     local SearchBtn = Create("ImageButton", { Size = UDim2.new(0, 18, 0, 18), Position = UDim2.new(1, -30, 0.5, -9), BackgroundTransparency = 1, Image = Library.Icons.Search, ImageColor3 = Library.Theme.SubText, Parent = TopBar })
     
@@ -195,7 +196,6 @@ function Library:CreateWindow(titleText)
         end
     end)
 
-    -- Rollup Intro / UI Toggle
     local isVisible = true
     local isAnimating = true
     local baseSize = UDim2.new(0, 760, 0, 510)
@@ -216,7 +216,6 @@ function Library:CreateWindow(titleText)
         end
     end)
 
-    -- Dynamic Notifications System
     local NotifContainer = Create("Frame", { Size = UDim2.new(0, 310, 1, -20), Position = UDim2.new(1, -330, 0, 10), BackgroundTransparency = 1, Parent = sg })
     Create("UIListLayout", { Padding = UDim.new(0, 10), VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = NotifContainer })
 
@@ -224,7 +223,6 @@ function Library:CreateWindow(titleText)
     
     function WindowObj:Notify(title, text, duration)
         duration = duration or 5
-        
         local textBounds = TextService:GetTextSize(text, 12, Enum.Font.Gotham, Vector2.new(225, 9999))
         local descHeight = textBounds.Y
         local innerHeight = math.max(60, 32 + descHeight + 15) 
@@ -238,7 +236,6 @@ function Library:CreateWindow(titleText)
         Create("UIStroke", { Color = Library.Theme.Border, Parent = NFrame })
         
         local Icon = Create("ImageLabel", { Size = UDim2.new(0, 22, 0, 22), Position = UDim2.new(0, 15, 0, 12), BackgroundTransparency = 1, Image = Library.Icons.Info, ImageColor3 = Library.Theme.Accent, Parent = NFrame })
-        
         Create("TextLabel", { Size = UDim2.new(1, -55, 0, 20), Position = UDim2.new(0, 48, 0, 10), BackgroundTransparency = 1, Text = title, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = NFrame })
         Create("TextLabel", { Size = UDim2.new(1, -55, 0, descHeight), Position = UDim2.new(0, 48, 0, 32), BackgroundTransparency = 1, Text = text, TextColor3 = Library.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, Parent = NFrame })
         
@@ -254,9 +251,6 @@ function Library:CreateWindow(titleText)
         end)
     end
 
-    -- ========================================== --
-    --             COLOR PICKER WINDOW            --
-    -- ========================================== --
     local CPBg = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Visible = false, ZIndex = 50, Parent = MainFrame })
     local CPWindow = Create("Frame", { Size = UDim2.new(0, 240, 0, 310), Position = UDim2.new(0.5, -120, 0.5, -155), BackgroundColor3 = Library.Theme.MainBg, ZIndex = 51, Parent = CPBg })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = CPWindow })
@@ -359,9 +353,6 @@ function Library:CreateWindow(titleText)
         FadeUI(CPWindow, true, 0.2)
     end
 
-    -- ========================================== --
-    --                 TAB CREATION               --
-    -- ========================================== --
     local isSwitchingTab = false
 
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
@@ -482,8 +473,6 @@ function Library:CreateWindow(titleText)
             local STitle = Create("TextLabel", { Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = string.upper(sectionName), TextColor3 = Library.Theme.SubText, Font = Enum.Font.GothamBold, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, Parent = SectionFrame })
 
             local ElementContainer = Create("Frame", { Size = UDim2.new(1, 0, 1, -30), Position = UDim2.new(0, 0, 0, 30), BackgroundTransparency = 1, Parent = SectionFrame })
-            
-            -- FIX: Set SortOrder to LayoutOrder so elements render strictly in insertion sequence
             local ELayout = Create("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder, Parent = ElementContainer })
 
             ELayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
@@ -493,11 +482,11 @@ function Library:CreateWindow(titleText)
 
             TabObj.Sections[SectionFrame] = {Title = STitle, Stroke = SStroke, IsVisible = true, Elements = {}}
             local SectionObj = {}
-            local elementCount = 0 -- FIX: Internal counter to assign LayoutOrder
+            local elementCount = 0 
             
             local function RegEl(name, frame, origH)
                 elementCount = elementCount + 1
-                frame.LayoutOrder = elementCount -- Force element down the list
+                frame.LayoutOrder = elementCount 
                 frame.ClipsDescendants = true
                 table.insert(TabObj.Sections[SectionFrame].Elements, {Name = name, Frame = frame, OrigH = origH, IsVisible = true})
             end
@@ -546,10 +535,25 @@ function Library:CreateWindow(titleText)
                 RegEl(name1 .. " " .. name2, DBFrame, 36)
             end
 
+            function SectionObj:CreateInput(name, placeholder, callback)
+                local IFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 45), BackgroundTransparency = 1, Parent = ElementContainer })
+                Create("TextLabel", { Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = IFrame })
+                
+                local TextBox = Create("TextBox", { Size = UDim2.new(1, -20, 0, 24), Position = UDim2.new(0, 10, 0, 20), BackgroundColor3 = Library.Theme.ElementBg, TextColor3 = Library.Theme.Text, PlaceholderText = placeholder, Text = "", Font = Enum.Font.Gotham, TextSize = 12, Parent = IFrame })
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = TextBox })
+                Create("UIStroke", { Color = Library.Theme.Border, Parent = TextBox })
+        
+                TextBox.FocusLost:Connect(function()
+                    callback(TextBox.Text)
+                end)
+                
+                RegEl(name, IFrame, 45)
+            end
+
             function SectionObj:CreateToggle(name, default, callback)
                 local id = tabName .. "_" .. name
                 local state = default
-                Library.Registry[id] = {Value = state}
+                Library.Registry[id] = {Value = state, Type = "Toggle"}
 
                 local TFrame = Create("TextButton", { Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1, Text = "", Parent = ElementContainer })
                 Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = TFrame })
@@ -560,20 +564,26 @@ function Library:CreateWindow(titleText)
                 local Thumb = Create("Frame", { Size = UDim2.new(0, 12, 0, 12), Position = state and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track })
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Thumb })
 
-                TFrame.MouseButton1Click:Connect(function()
-                    state = not state
+                local function setState(val)
+                    state = val
                     Library.Registry[id].Value = state
                     TS:Create(Track, TweenInfo.new(0.2), {BackgroundColor3 = state and Library.Theme.Accent or Library.Theme.ElementBg}):Play()
                     TS:Create(Thumb, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
                     callback(state)
+                end
+                Library.Registry[id].Set = setState
+
+                TFrame.MouseButton1Click:Connect(function()
+                    setState(not state)
                 end)
+                
                 RegEl(name, TFrame, 32)
-                return { Set = function(_, val) state = not val; TFrame.MouseButton1Click:Fire() end }
+                return { Set = setState }
             end
 
             function SectionObj:CreateDropdown(name, list, default, callback)
                 local id = tabName .. "_" .. name
-                Library.Registry[id] = {Value = default}
+                Library.Registry[id] = {Value = default, Type = "Dropdown"}
                 
                 local DFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1, ClipsDescendants = true, Parent = ElementContainer })
                 Create("TextLabel", { Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 10, 0, 2), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, Parent = DFrame })
@@ -622,21 +632,22 @@ function Library:CreateWindow(titleText)
                 end
                 populate(list)
 
+                local function setDrop(val)
+                    SelectedText.Text = val
+                    Library.Registry[id].Value = val
+                    callback(val) 
+                end
+                Library.Registry[id].Set = setDrop
+
                 RegEl(name, DFrame, 48)
 
                 return {
-                    Set = function(_, val) 
-                        SelectedText.Text = val
-                        Library.Registry[id].Value = val
-                        callback(val) 
-                    end,
+                    Set = setDrop,
                     Refresh = function(_, newList, newDef) 
                         list = newList
                         populate(newList)
                         if newDef then 
-                            SelectedText.Text = newDef 
-                            Library.Registry[id].Value = newDef
-                            callback(newDef)
+                            setDrop(newDef)
                         end 
                     end
                 }
@@ -645,7 +656,7 @@ function Library:CreateWindow(titleText)
             function SectionObj:CreateColorPicker(name, default, callback)
                 local id = tabName .. "_" .. name
                 local val = default
-                Library.Registry[id] = {Value = val}
+                Library.Registry[id] = {Value = val, Type = "ColorPicker"}
 
                 local CFrame = Create("TextButton", { Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1, Text = "", Parent = ElementContainer })
                 Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = CFrame })
@@ -654,22 +665,25 @@ function Library:CreateWindow(titleText)
                 Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = ColorBox })
                 Create("UIStroke", { Color = Library.Theme.Border, Parent = ColorBox })
 
+                local function setColor(newColor)
+                    val = newColor
+                    Library.Registry[id].Value = newColor
+                    ColorBox.BackgroundColor3 = newColor
+                    callback(newColor)
+                end
+                Library.Registry[id].Set = setColor
+
                 CFrame.MouseButton1Click:Connect(function()
-                    WindowObj:OpenColorPicker(val, function(newColor)
-                        val = newColor
-                        Library.Registry[id].Value = newColor
-                        ColorBox.BackgroundColor3 = newColor
-                        callback(newColor)
-                    end)
+                    WindowObj:OpenColorPicker(val, setColor)
                 end)
                 RegEl(name, CFrame, 32)
-                return { Set = function(_, newVal) val = newVal; ColorBox.BackgroundColor3 = newVal; Library.Registry[id].Value = newVal; callback(newVal) end }
+                return { Set = setColor }
             end
 
             function SectionObj:CreateSlider(name, min, max, default, callback)
                 local id = tabName .. "_" .. name
                 local val = default
-                Library.Registry[id] = {Value = val}
+                Library.Registry[id] = {Value = val, Type = "Slider"}
 
                 local SFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 45), BackgroundTransparency = 1, Parent = ElementContainer })
                 Create("TextLabel", { Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 10, 0, 5), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = SFrame })
@@ -683,26 +697,27 @@ function Library:CreateWindow(titleText)
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Thumb })
 
                 local dragging = false
-                local function updateSlider(input)
-                    local percent = math.clamp((input.Position.X - TrackBtn.AbsolutePosition.X) / TrackBtn.AbsoluteSize.X, 0, 1)
-                    val = math.floor(min + (max - min) * percent)
-                    TS:Create(Fill, TweenInfo.new(0.1), {Size = UDim2.new(percent, 0, 1, 0)}):Play()
-                    ValLbl.Text = tostring(val)
-                    Library.Registry[id].Value = val
-                    callback(val)
-                end
-                TrackBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true updateSlider(input) end end)
-                UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
-                UIS.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end end)
-
-                RegEl(name, SFrame, 45)
-                return { Set = function(_, newVal)
+                
+                local function setSlider(newVal)
                     val = math.clamp(newVal, min, max)
                     TS:Create(Fill, TweenInfo.new(0.2), {Size = UDim2.new((val - min)/(max - min), 0, 1, 0)}):Play()
                     ValLbl.Text = tostring(val)
                     Library.Registry[id].Value = val
                     callback(val)
-                end }
+                end
+                Library.Registry[id].Set = setSlider
+
+                local function updateSlider(input)
+                    local percent = math.clamp((input.Position.X - TrackBtn.AbsolutePosition.X) / TrackBtn.AbsoluteSize.X, 0, 1)
+                    setSlider(math.floor(min + (max - min) * percent))
+                end
+
+                TrackBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true updateSlider(input) end end)
+                UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+                UIS.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end end)
+
+                RegEl(name, SFrame, 45)
+                return { Set = setSlider }
             end
 
             function SectionObj:CreateKeybind(name, default, callback)
@@ -719,7 +734,7 @@ function Library:CreateWindow(titleText)
                     end
                 end
                 
-                Library.Registry[id] = {Value = defaultName}
+                Library.Registry[id] = {Value = defaultName, Type = "Keybind"}
 
                 local KFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1, Parent = ElementContainer })
                 Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = KFrame })
@@ -729,6 +744,22 @@ function Library:CreateWindow(titleText)
                 Create("UIStroke", { Color = Library.Theme.Border, Parent = BindBtn })
 
                 local listening = false
+
+                local function setKey(newKeyStr)
+                    BindBtn.Text = newKeyStr
+                    Library.Registry[id].Value = newKeyStr
+                    
+                    local parsedKey = nil
+                    if newKeyStr:match("MB") then
+                        local num = newKeyStr:match("%d")
+                        parsedKey = Enum.UserInputType["MouseButton" .. num]
+                    elseif newKeyStr ~= "None" then
+                        pcall(function() parsedKey = Enum.KeyCode[newKeyStr] end)
+                    end
+                    currentKey = parsedKey
+                    callback(currentKey)
+                end
+                Library.Registry[id].Set = setKey
 
                 BindBtn.MouseButton1Click:Connect(function()
                     if listening then return end
@@ -750,41 +781,115 @@ function Library:CreateWindow(titleText)
                         
                         if isMouse or isKeyboard then
                             local newKeyStr = "None"
-                            
                             if key == Enum.KeyCode.Escape then
                                 currentKey = nil
                             elseif isKeyboard then
-                                currentKey = key
                                 newKeyStr = key.Name
                             elseif isMouse then
-                                currentKey = type
                                 newKeyStr = string.gsub(type.Name, "MouseButton", "MB")
                             end
                             
                             listening = false
-                            
                             TS:Create(BindBtn, TweenInfo.new(0.15), {TextTransparency = 1}):Play()
                             task.wait(0.15)
-                            BindBtn.Text = newKeyStr
-                            Library.Registry[id].Value = newKeyStr
+                            setKey(newKeyStr)
                             TS:Create(BindBtn, TweenInfo.new(0.15), {TextTransparency = 0}):Play()
-                            callback(currentKey)
                         end
                         return 
                     end
                     
                     if not gp and currentKey ~= nil and not listening then
                         if input.KeyCode == currentKey or input.UserInputType == currentKey then
-                            callback()
+                            callback(currentKey)
                         end
                     end
                 end)
 
                 RegEl(name, KFrame, 32)
+                return { Set = setKey }
             end
 
             return SectionObj
         end
+
+        -- ========================================== --
+        --          CONFIG SYSTEM INTEGRATION         --
+        -- ========================================== --
+        function WindowObj:CreateConfigSystem(folderName)
+            local folderPath = "WindUI/" .. (folderName or "Configs")
+            if makefolder then
+                if not isfolder("WindUI") then makefolder("WindUI") end
+                if not isfolder(folderPath) then makefolder(folderPath) end
+            end
+
+            local ConfigTab = WindowObj:CreateTab("Configuration", "Save")
+            local ConfigSec = ConfigTab:CreateSection("Config Manager", "Left")
+            
+            local currentName = "Default"
+            ConfigSec:CreateInput("Config Name", "Enter name...", function(val)
+                currentName = val
+            end)
+
+            local function GetConfigs()
+                local list = {}
+                if listfiles then
+                    for _, file in ipairs(listfiles(folderPath)) do
+                        local fileName = file:match("([^/\\]+)%.json$")
+                        if fileName then table.insert(list, fileName) end
+                    end
+                end
+                return list
+            end
+
+            local selectedConfig = ""
+            local ConfigDrop = ConfigSec:CreateDropdown("Select Config", GetConfigs(), "", function(val)
+                selectedConfig = val
+            end)
+
+            ConfigSec:CreateDualButtons("Save Config", function()
+                if writefile then
+                    local data = {}
+                    for id, entry in pairs(Library.Registry) do
+                        local val = entry.Value
+                        if entry.Type == "ColorPicker" and typeof(val) == "Color3" then
+                            data[id] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
+                        else
+                            data[id] = {Type = entry.Type, Value = val}
+                        end
+                    end
+                    writefile(folderPath .. "/" .. currentName .. ".json", HttpService:JSONEncode(data))
+                    ConfigDrop:Refresh(GetConfigs(), currentName)
+                    WindowObj:Notify("Configuration", "Successfully saved config: " .. currentName .. ".json", 3)
+                end
+            end, "Refresh List", function()
+                ConfigDrop:Refresh(GetConfigs(), selectedConfig)
+            end)
+
+            ConfigSec:CreateDualButtons("Load Config", function()
+                if readfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
+                    local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(folderPath .. "/" .. selectedConfig .. ".json")) end)
+                    if success and type(decoded) == "table" then
+                        for id, entry in pairs(decoded) do
+                            if Library.Registry[id] and Library.Registry[id].Set then
+                                if entry.Type == "Color3" then
+                                    Library.Registry[id].Set(Color3.new(entry.R, entry.G, entry.B))
+                                else
+                                    Library.Registry[id].Set(entry.Value)
+                                end
+                            end
+                        end
+                        WindowObj:Notify("Configuration", "Successfully loaded config: " .. selectedConfig, 3)
+                    end
+                end
+            end, "Delete Config", function()
+                if delfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
+                    delfile(folderPath .. "/" .. selectedConfig .. ".json")
+                    ConfigDrop:Refresh(GetConfigs(), "")
+                    WindowObj:Notify("Configuration", "Deleted config: " .. selectedConfig, 3)
+                end
+            end)
+        end
+
         return TabObj
     end
 
