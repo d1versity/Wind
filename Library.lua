@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse]
+-- Wind by d1versity [A.K.A. Vhyse] | v1
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -30,11 +30,12 @@ local Library = {
         Shield      = "rbxassetid://10734951847",
         Code        = "rbxassetid://10709810463",
         Crystal     = "rbxassetid://7734053426",
-        Save        = "rbxassetid://10734950309" -- Backup save icon
+        Save        = "rbxassetid://10734950309" 
     },
     Registry = {},
     Connections = {},
-    AllowDrag = true
+    AllowDrag = true,
+    ColorClipboard = Color3.fromRGB(255, 255, 255) -- Internal clipboard
 }
 
 local TS = game:GetService("TweenService")
@@ -147,6 +148,58 @@ function Library:CreateWindow(titleText)
         Parent = (gethui and gethui()) or game:GetService("CoreGui")
     })
 
+    -- [ WATERMARK SYSTEM ]
+    local WMOuter = Create("Frame", { Size = UDim2.new(0, 0, 0, 36), Position = UDim2.new(0, 50, 0, 50), BackgroundColor3 = Library.Theme.OuterBorder, BackgroundTransparency = 0.4, BorderSizePixel = 0, AutomaticSize = Enum.AutomaticSize.X, Visible = false, Parent = sg })
+    Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = WMOuter })
+    MakeSmoothDraggable(WMOuter, WMOuter)
+    
+    local WMInner = Create("Frame", { Size = UDim2.new(1, -10, 1, -10), Position = UDim2.new(0, 5, 0, 5), BackgroundColor3 = Library.Theme.MainBg, AutomaticSize = Enum.AutomaticSize.X, Parent = WMOuter })
+    Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = WMInner })
+    Create("UIStroke", { Color = Library.Theme.Border, Thickness = 1, Parent = WMInner })
+    Create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = WMInner })
+    
+    local WMLayout = Create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = WMInner })
+
+    local function AddWMLine(order)
+        local line = Create("Frame", { Size = UDim2.new(0, 2, 0, 12), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, LayoutOrder = order, Parent = WMInner })
+        Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = line })
+    end
+
+    local WMAvatar = Create("ImageLabel", { Size = UDim2.new(0, 18, 0, 18), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", LayoutOrder = 1, Parent = WMInner })
+    Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WMAvatar })
+
+    local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 11, LayoutOrder = 2, Parent = WMInner })
+    AddWMLine(3)
+    local WMTime = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = "00:00:00", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 11, LayoutOrder = 4, Parent = WMInner })
+    AddWMLine(5)
+    local WMFPS = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, RichText = true, Text = "0 <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 11, LayoutOrder = 6, Parent = WMInner })
+    AddWMLine(7)
+
+    local gameName = "Roblox"
+    if game.PlaceId > 0 then
+        task.spawn(function()
+            pcall(function()
+                gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+                if #gameName > 25 then gameName = gameName:sub(1, 25) .. "..." end
+            end)
+        end)
+    end
+    local WMGame = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = gameName, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 11, LayoutOrder = 8, Parent = WMInner })
+
+    local lastTick, frames = tick(), 0
+    RS.RenderStepped:Connect(function()
+        frames = frames + 1
+        if tick() - lastTick >= 1 then
+            WMFPS.Text = frames .. " <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>"
+            frames = 0
+            lastTick = tick()
+        end
+        WMTime.Text = os.date("%H:%M:%S")
+        WMGame.Text = gameName
+    end)
+
+
+    -- [ MAIN WINDOW ]
     local OuterFrame = Create("Frame", { Size = UDim2.new(0, 760, 0, 510), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.5, -255), BackgroundColor3 = Library.Theme.OuterBorder, BackgroundTransparency = 0.4, BorderSizePixel = 0, ClipsDescendants = true, Parent = sg })
     Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = OuterFrame })
     MakeSmoothDraggable(OuterFrame, OuterFrame)
@@ -164,7 +217,7 @@ function Library:CreateWindow(titleText)
     Create("TextLabel", { Size = UDim2.new(1, -50, 0, 20), Position = UDim2.new(0, 48, 0.5, -10), BackgroundTransparency = 1, Text = titleText, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, Parent = LogoArea })
 
     local TabContainer = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, -140), Position = UDim2.new(0, 0, 0, 70), BackgroundTransparency = 1, ScrollBarThickness = 0, Parent = Sidebar })
-    Create("UIListLayout", { Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center, Parent = TabContainer })
+    Create("UIListLayout", { Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = TabContainer })
 
     local ProfileArea = Create("Frame", { Size = UDim2.new(1, 0, 0, 70), Position = UDim2.new(0, 0, 1, -70), BackgroundTransparency = 1, Parent = Sidebar })
     local Avatar = Create("ImageLabel", { Size = UDim2.new(0, 32, 0, 32), Position = UDim2.new(0, 15, 0.5, -16), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", Parent = ProfileArea })
@@ -219,7 +272,7 @@ function Library:CreateWindow(titleText)
     local NotifContainer = Create("Frame", { Size = UDim2.new(0, 310, 1, -20), Position = UDim2.new(1, -330, 0, 10), BackgroundTransparency = 1, Parent = sg })
     Create("UIListLayout", { Padding = UDim.new(0, 10), VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = NotifContainer })
 
-    local WindowObj = { CurrentTab = nil, Tabs = {} }
+    local WindowObj = { CurrentTab = nil, Tabs = {}, TabCount = 0 }
     
     function WindowObj:Notify(title, text, duration)
         duration = duration or 5
@@ -251,8 +304,11 @@ function Library:CreateWindow(titleText)
         end)
     end
 
+    -- ========================================== --
+    --             COLOR PICKER WINDOW            --
+    -- ========================================== --
     local CPBg = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Visible = false, ZIndex = 50, Parent = MainFrame })
-    local CPWindow = Create("Frame", { Size = UDim2.new(0, 240, 0, 310), Position = UDim2.new(0.5, -120, 0.5, -155), BackgroundColor3 = Library.Theme.MainBg, ZIndex = 51, Parent = CPBg })
+    local CPWindow = Create("Frame", { Size = UDim2.new(0, 240, 0, 350), Position = UDim2.new(0.5, -120, 0.5, -175), BackgroundColor3 = Library.Theme.MainBg, ZIndex = 51, Parent = CPBg })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = CPWindow })
     Create("UIStroke", { Color = Library.Theme.Border, Parent = CPWindow })
     
@@ -290,7 +346,15 @@ function Library:CreateWindow(titleText)
     end
     local RBox, GBox, BBox = CreateRGBBox("R"), CreateRGBBox("G"), CreateRGBBox("B")
 
-    local CloseCPBtn = Create("TextButton", { Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 265), BackgroundColor3 = Library.Theme.ElementBg, Text = "Apply & Close", TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 12, AutoButtonColor = false, ZIndex = 52, Parent = CPWindow })
+    local CopyPasteContainer = Create("Frame", { Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 265), BackgroundTransparency = 1, ZIndex = 52, Parent = CPWindow })
+    local CopyBtn = Create("TextButton", { Size = UDim2.new(0.5, -5, 1, 0), BackgroundColor3 = Library.Theme.ElementBg, Text = "Copy", TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 12, AutoButtonColor = false, ZIndex = 52, Parent = CopyPasteContainer })
+    Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = CopyBtn })
+    Create("UIStroke", { Color = Library.Theme.Border, Parent = CopyBtn })
+    local PasteBtn = Create("TextButton", { Size = UDim2.new(0.5, -5, 1, 0), Position = UDim2.new(0.5, 5, 0, 0), BackgroundColor3 = Library.Theme.ElementBg, Text = "Paste", TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 12, AutoButtonColor = false, ZIndex = 52, Parent = CopyPasteContainer })
+    Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = PasteBtn })
+    Create("UIStroke", { Color = Library.Theme.Border, Parent = PasteBtn })
+
+    local CloseCPBtn = Create("TextButton", { Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 305), BackgroundColor3 = Library.Theme.ElementBg, Text = "Apply & Close", TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 12, AutoButtonColor = false, ZIndex = 52, Parent = CPWindow })
     Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = CloseCPBtn })
     Create("UIStroke", { Color = Library.Theme.Border, Parent = CloseCPBtn })
 
@@ -306,6 +370,15 @@ function Library:CreateWindow(titleText)
         BBox.Text = tostring(math.floor(c.B * 255))
         if CPState.Callback then CPState.Callback(c) end
     end
+
+    CopyBtn.MouseButton1Click:Connect(function()
+        Library.ColorClipboard = Color3.fromHSV(CPState.H, CPState.S, CPState.V)
+    end)
+    
+    PasteBtn.MouseButton1Click:Connect(function()
+        CPState.H, CPState.S, CPState.V = Library.ColorClipboard:ToHSV()
+        UpdateCPVisuals()
+    end)
 
     local draggingSV, draggingHue = false, false
     SVMap.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then draggingSV = true end end)
@@ -353,6 +426,9 @@ function Library:CreateWindow(titleText)
         FadeUI(CPWindow, true, 0.2)
     end
 
+    -- ========================================== --
+    --                 TAB CREATION               --
+    -- ========================================== --
     local isSwitchingTab = false
 
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
@@ -398,8 +474,9 @@ function Library:CreateWindow(titleText)
 
     function WindowObj:CreateTab(tabName, iconName)
         local realIcon = Library.Icons[iconName] or iconName or Library.Icons.Settings
+        WindowObj.TabCount = WindowObj.TabCount + 1
 
-        local TabBtn = Create("TextButton", { Size = UDim2.new(1, -20, 0, 36), BackgroundColor3 = Library.Theme.SidebarBg, Text = "", AutoButtonColor = false, Parent = TabContainer })
+        local TabBtn = Create("TextButton", { Size = UDim2.new(1, -20, 0, 36), BackgroundColor3 = Library.Theme.SidebarBg, Text = "", AutoButtonColor = false, LayoutOrder = WindowObj.TabCount, Parent = TabContainer })
         Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TabBtn })
         local AccentLine = Create("Frame", { Size = UDim2.new(0, 3, 0, 0), Position = UDim2.new(0, 0, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Parent = TabBtn })
         Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = AccentLine })
@@ -543,10 +620,7 @@ function Library:CreateWindow(titleText)
                 Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = TextBox })
                 Create("UIStroke", { Color = Library.Theme.Border, Parent = TextBox })
         
-                TextBox.FocusLost:Connect(function()
-                    callback(TextBox.Text)
-                end)
-                
+                TextBox.FocusLost:Connect(function() callback(TextBox.Text) end)
                 RegEl(name, IFrame, 45)
             end
 
@@ -573,10 +647,7 @@ function Library:CreateWindow(titleText)
                 end
                 Library.Registry[id].Set = setState
 
-                TFrame.MouseButton1Click:Connect(function()
-                    setState(not state)
-                end)
-                
+                TFrame.MouseButton1Click:Connect(function() setState(not state) end)
                 RegEl(name, TFrame, 32)
                 return { Set = setState }
             end
@@ -646,9 +717,7 @@ function Library:CreateWindow(titleText)
                     Refresh = function(_, newList, newDef) 
                         list = newList
                         populate(newList)
-                        if newDef then 
-                            setDrop(newDef)
-                        end 
+                        if newDef then setDrop(newDef) end 
                     end
                 }
             end
@@ -700,7 +769,7 @@ function Library:CreateWindow(titleText)
                 
                 local function setSlider(newVal)
                     val = math.clamp(newVal, min, max)
-                    TS:Create(Fill, TweenInfo.new(0.2), {Size = UDim2.new((val - min)/(max - min), 0, 1, 0)}):Play()
+                    TS:Create(Fill, TweenInfo.new(0.1), {Size = UDim2.new((val - min)/(max - min), 0, 1, 0)}):Play()
                     ValLbl.Text = tostring(val)
                     Library.Registry[id].Value = val
                     callback(val)
@@ -815,80 +884,87 @@ function Library:CreateWindow(titleText)
         -- ========================================== --
         --          CONFIG SYSTEM INTEGRATION         --
         -- ========================================== --
-        function WindowObj:CreateConfigSystem(folderName)
-            local folderPath = "WindUI/" .. (folderName or "Configs")
-            if makefolder then
-                if not isfolder("WindUI") then makefolder("WindUI") end
-                if not isfolder(folderPath) then makefolder(folderPath) end
+        local safeTitle = string.gsub(titleText, "[^%w%s_]", ""):gsub(" ", "")
+        local folderPath = "WindUI/" .. safeTitle
+        
+        if makefolder then
+            if not isfolder("WindUI") then makefolder("WindUI") end
+            if not isfolder(folderPath) then makefolder(folderPath) end
+        end
+
+        local ConfigTab = WindowObj:CreateTab("Configuration", "Save")
+        ConfigTab.Btn.LayoutOrder = 99999 -- Force absolute bottom 
+
+        local VisualsSec = ConfigTab:CreateSection("UI Options", "Left")
+        VisualsSec:CreateToggle("Show Watermark", false, function(v)
+            WMOuter.Visible = v
+        end)
+
+        local ConfigSec = ConfigTab:CreateSection("Config Manager", "Right")
+        local currentName = "Default"
+        
+        ConfigSec:CreateInput("Config Name", "Enter name...", function(val)
+            currentName = val
+        end)
+
+        local function GetConfigs()
+            local list = {}
+            if listfiles then
+                for _, file in ipairs(listfiles(folderPath)) do
+                    local fileName = file:match("([^/\\]+)%.json$")
+                    if fileName then table.insert(list, fileName) end
+                end
             end
+            return list
+        end
 
-            local ConfigTab = WindowObj:CreateTab("Configuration", "Save")
-            local ConfigSec = ConfigTab:CreateSection("Config Manager", "Left")
-            
-            local currentName = "Default"
-            ConfigSec:CreateInput("Config Name", "Enter name...", function(val)
-                currentName = val
-            end)
+        local selectedConfig = ""
+        local ConfigDrop = ConfigSec:CreateDropdown("Select Config", GetConfigs(), "", function(val)
+            selectedConfig = val
+        end)
 
-            local function GetConfigs()
-                local list = {}
-                if listfiles then
-                    for _, file in ipairs(listfiles(folderPath)) do
-                        local fileName = file:match("([^/\\]+)%.json$")
-                        if fileName then table.insert(list, fileName) end
+        ConfigSec:CreateDualButtons("Save Config", function()
+            if writefile then
+                local data = {}
+                for id, entry in pairs(Library.Registry) do
+                    local val = entry.Value
+                    if entry.Type == "ColorPicker" and typeof(val) == "Color3" then
+                        data[id] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
+                    else
+                        data[id] = {Type = entry.Type, Value = val}
                     end
                 end
-                return list
+                writefile(folderPath .. "/" .. currentName .. ".json", HttpService:JSONEncode(data))
+                ConfigDrop:Refresh(GetConfigs(), currentName)
+                WindowObj:Notify("Configuration", "Saved config: " .. currentName .. ".json", 3)
             end
+        end, "Refresh List", function()
+            ConfigDrop:Refresh(GetConfigs(), selectedConfig)
+        end)
 
-            local selectedConfig = ""
-            local ConfigDrop = ConfigSec:CreateDropdown("Select Config", GetConfigs(), "", function(val)
-                selectedConfig = val
-            end)
-
-            ConfigSec:CreateDualButtons("Save Config", function()
-                if writefile then
-                    local data = {}
-                    for id, entry in pairs(Library.Registry) do
-                        local val = entry.Value
-                        if entry.Type == "ColorPicker" and typeof(val) == "Color3" then
-                            data[id] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
-                        else
-                            data[id] = {Type = entry.Type, Value = val}
-                        end
-                    end
-                    writefile(folderPath .. "/" .. currentName .. ".json", HttpService:JSONEncode(data))
-                    ConfigDrop:Refresh(GetConfigs(), currentName)
-                    WindowObj:Notify("Configuration", "Successfully saved config: " .. currentName .. ".json", 3)
-                end
-            end, "Refresh List", function()
-                ConfigDrop:Refresh(GetConfigs(), selectedConfig)
-            end)
-
-            ConfigSec:CreateDualButtons("Load Config", function()
-                if readfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
-                    local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(folderPath .. "/" .. selectedConfig .. ".json")) end)
-                    if success and type(decoded) == "table" then
-                        for id, entry in pairs(decoded) do
-                            if Library.Registry[id] and Library.Registry[id].Set then
-                                if entry.Type == "Color3" then
-                                    Library.Registry[id].Set(Color3.new(entry.R, entry.G, entry.B))
-                                else
-                                    Library.Registry[id].Set(entry.Value)
-                                end
+        ConfigSec:CreateDualButtons("Load Config", function()
+            if readfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
+                local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(folderPath .. "/" .. selectedConfig .. ".json")) end)
+                if success and type(decoded) == "table" then
+                    for id, entry in pairs(decoded) do
+                        if Library.Registry[id] and Library.Registry[id].Set then
+                            if entry.Type == "Color3" then
+                                Library.Registry[id].Set(Color3.new(entry.R, entry.G, entry.B))
+                            else
+                                Library.Registry[id].Set(entry.Value)
                             end
                         end
-                        WindowObj:Notify("Configuration", "Successfully loaded config: " .. selectedConfig, 3)
                     end
+                    WindowObj:Notify("Configuration", "Loaded config: " .. selectedConfig, 3)
                 end
-            end, "Delete Config", function()
-                if delfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
-                    delfile(folderPath .. "/" .. selectedConfig .. ".json")
-                    ConfigDrop:Refresh(GetConfigs(), "")
-                    WindowObj:Notify("Configuration", "Deleted config: " .. selectedConfig, 3)
-                end
-            end)
-        end
+            end
+        end, "Delete Config", function()
+            if delfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
+                delfile(folderPath .. "/" .. selectedConfig .. ".json")
+                ConfigDrop:Refresh(GetConfigs(), "")
+                WindowObj:Notify("Configuration", "Deleted config: " .. selectedConfig, 3)
+            end
+        end)
 
         return TabObj
     end
