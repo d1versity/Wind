@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse] | v1.4
+-- Wind by d1versity [A.K.A. Vhyse] | v1.5
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -179,7 +179,6 @@ function Library:CreateWindow(titleText)
 
     local WMAvatar = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", LayoutOrder = 2, Parent = WMInner })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WMAvatar })
-    AddWMLine(3)
 
     local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = 4, Parent = WMInner })
     AddWMLine(5)
@@ -213,7 +212,6 @@ function Library:CreateWindow(titleText)
         WMGame.Text = gameName
     end)
 
-    -- Force Cache Initial Fade States
     WMOuter.Visible = true
     FadeUI(WMOuter, false, 0)
     WMOuter.Visible = false
@@ -545,7 +543,6 @@ function Library:CreateWindow(titleText)
             isSwitchingTab = false
         end)
 
-        -- Prevent the auto-generated config tab from stealing default focus
         if not WindowObj.CurrentTab and tabName ~= "Configuration" then
             TabBase.Visible = true
             TabBtn.BackgroundColor3 = Library.Theme.ElementBg
@@ -848,7 +845,9 @@ function Library:CreateWindow(titleText)
                         pcall(function() parsedKey = Enum.KeyCode[newKeyStr] end)
                     end
                     currentKey = parsedKey
-                    callback(currentKey)
+                    
+                    -- False parameter indicates this is a key CHANGE, not a press
+                    callback(currentKey, false)
                 end
                 Library.Registry[id].Set = setKey
 
@@ -891,7 +890,8 @@ function Library:CreateWindow(titleText)
                     
                     if not gp and currentKey ~= nil and not listening then
                         if input.KeyCode == currentKey or input.UserInputType == currentKey then
-                            callback(currentKey)
+                            -- True parameter indicates this is a physical key PRESS
+                            callback(currentKey, true)
                         end
                     end
                 end)
@@ -917,7 +917,7 @@ function Library:CreateWindow(titleText)
     end
 
     local ConfigTab = WindowObj:CreateTab("Configuration", "Save")
-    ConfigTab.Btn.LayoutOrder = 99999
+    ConfigTab.Btn.LayoutOrder = 99999 
 
     local VisualsSec = ConfigTab:CreateSection("UI Options", "Left")
     local isWMVisible = false
