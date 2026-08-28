@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse] | v1.7
+-- Wind by d1versity [A.K.A. Vhyse] | v1.8
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -175,21 +175,19 @@ function Library:CreateWindow(titleText)
     end
 
     local WMIcon = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundTransparency = 1, Image = Library.Icons.Wind, ImageColor3 = Library.Theme.Accent, LayoutOrder = 0, Parent = WMInner })
-    AddWMLine(1)
-
+    
     local WMAvatar = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", LayoutOrder = 2, Parent = WMInner })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WMAvatar })
 
-    -- Removed AddWMLine between Avatar and Display Name
     local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = 4, Parent = WMInner })
+    
     AddWMLine(5)
-    
     local WMTime = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = "00:00:00", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 6, Parent = WMInner })
-    AddWMLine(7)
     
+    AddWMLine(7)
     local WMFPS = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, RichText = true, Text = "0 <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 8, Parent = WMInner })
+    
     AddWMLine(9)
-
     local gameName = "Roblox"
     if game.PlaceId > 0 then
         task.spawn(function()
