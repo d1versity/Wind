@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse] | v1.1
+-- Wind by d1versity [A.K.A. Vhyse] | v1.2
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -142,7 +142,7 @@ function Library:CreateWindow(titleText)
         Parent = (gethui and gethui()) or game:GetService("CoreGui")
     })
 
-    -- [ WATERMARK SYSTEM FREEZE PATCH ]
+    -- [ WATERMARK SYSTEM ]
     local WMOuter = Create("Frame", { 
         Size = UDim2.new(0, 0, 0, 36), 
         Position = UDim2.new(0, 50, 0, 50), 
@@ -157,7 +157,6 @@ function Library:CreateWindow(titleText)
     Create("UIPadding", { PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5), Parent = WMOuter })
     MakeSmoothDraggable(WMOuter, WMOuter)
     
-    -- Removed conflicting Scale = 1 and Position offsets. Replaced with relative zero sizing and UIPadding.
     local WMInner = Create("Frame", { 
         Size = UDim2.new(0, 0, 1, 0), 
         BackgroundColor3 = Library.Theme.MainBg, 
@@ -884,94 +883,93 @@ function Library:CreateWindow(titleText)
 
             return SectionObj
         end
-
-        -- ========================================== --
-        --          CONFIG SYSTEM INTEGRATION         --
-        -- ========================================== --
-        local safeTitle = string.gsub(titleText, "[^%w%s_]", ""):gsub(" ", "")
-        local folderPath = "WindUI/" .. safeTitle
-        
-        if makefolder then
-            if not isfolder("WindUI") then makefolder("WindUI") end
-            if not isfolder(folderPath) then makefolder(folderPath) end
-        end
-
-        local ConfigTab = WindowObj:CreateTab("Configuration", "Save")
-        ConfigTab.Btn.LayoutOrder = 99999 -- Force absolute bottom 
-
-        local VisualsSec = ConfigTab:CreateSection("UI Options", "Left")
-        VisualsSec:CreateToggle("Show Watermark", false, function(v)
-            WMOuter.Visible = v
-        end)
-
-        local ConfigSec = ConfigTab:CreateSection("Config Manager", "Right")
-        local currentName = "Default"
-        
-        ConfigSec:CreateInput("Config Name", "Enter name...", function(val)
-            currentName = val
-        end)
-
-        local function GetConfigs()
-            local list = {}
-            if listfiles then
-                for _, file in ipairs(listfiles(folderPath)) do
-                    local fileName = file:match("([^/\\]+)%.json$")
-                    if fileName then table.insert(list, fileName) end
-                end
-            end
-            return list
-        end
-
-        local selectedConfig = ""
-        local ConfigDrop = ConfigSec:CreateDropdown("Select Config", GetConfigs(), "", function(val)
-            selectedConfig = val
-        end)
-
-        ConfigSec:CreateDualButtons("Save Config", function()
-            if writefile then
-                local data = {}
-                for id, entry in pairs(Library.Registry) do
-                    local val = entry.Value
-                    if entry.Type == "ColorPicker" and typeof(val) == "Color3" then
-                        data[id] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
-                    else
-                        data[id] = {Type = entry.Type, Value = val}
-                    end
-                end
-                writefile(folderPath .. "/" .. currentName .. ".json", HttpService:JSONEncode(data))
-                ConfigDrop:Refresh(GetConfigs(), currentName)
-                WindowObj:Notify("Configuration", "Saved config: " .. currentName .. ".json", 3)
-            end
-        end, "Refresh List", function()
-            ConfigDrop:Refresh(GetConfigs(), selectedConfig)
-        end)
-
-        ConfigSec:CreateDualButtons("Load Config", function()
-            if readfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
-                local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(folderPath .. "/" .. selectedConfig .. ".json")) end)
-                if success and type(decoded) == "table" then
-                    for id, entry in pairs(decoded) do
-                        if Library.Registry[id] and Library.Registry[id].Set then
-                            if entry.Type == "Color3" then
-                                Library.Registry[id].Set(Color3.new(entry.R, entry.G, entry.B))
-                            else
-                                Library.Registry[id].Set(entry.Value)
-                            end
-                        end
-                    end
-                    WindowObj:Notify("Configuration", "Loaded config: " .. selectedConfig, 3)
-                end
-            end
-        end, "Delete Config", function()
-            if delfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
-                delfile(folderPath .. "/" .. selectedConfig .. ".json")
-                ConfigDrop:Refresh(GetConfigs(), "")
-                WindowObj:Notify("Configuration", "Deleted config: " .. selectedConfig, 3)
-            end
-        end)
-
         return TabObj
     end
+
+    -- ========================================== --
+    --          CONFIG SYSTEM INTEGRATION         --
+    -- ========================================== --
+    local safeTitle = string.gsub(titleText, "[^%w%s_]", ""):gsub(" ", "")
+    local folderPath = "WindUI/" .. safeTitle
+    
+    if makefolder then
+        if not isfolder("WindUI") then makefolder("WindUI") end
+        if not isfolder(folderPath) then makefolder(folderPath) end
+    end
+
+    local ConfigTab = WindowObj:CreateTab("Configuration", "Save")
+    ConfigTab.Btn.LayoutOrder = 99999 -- Force absolute bottom 
+
+    local VisualsSec = ConfigTab:CreateSection("UI Options", "Left")
+    VisualsSec:CreateToggle("Show Watermark", false, function(v)
+        WMOuter.Visible = v
+    end)
+
+    local ConfigSec = ConfigTab:CreateSection("Config Manager", "Right")
+    local currentName = "Default"
+    
+    ConfigSec:CreateInput("Config Name", "Enter name...", function(val)
+        currentName = val
+    end)
+
+    local function GetConfigs()
+        local list = {}
+        if listfiles then
+            for _, file in ipairs(listfiles(folderPath)) do
+                local fileName = file:match("([^/\\]+)%.json$")
+                if fileName then table.insert(list, fileName) end
+            end
+        end
+        return list
+    end
+
+    local selectedConfig = ""
+    local ConfigDrop = ConfigSec:CreateDropdown("Select Config", GetConfigs(), "", function(val)
+        selectedConfig = val
+    end)
+
+    ConfigSec:CreateDualButtons("Save Config", function()
+        if writefile then
+            local data = {}
+            for id, entry in pairs(Library.Registry) do
+                local val = entry.Value
+                if entry.Type == "ColorPicker" and typeof(val) == "Color3" then
+                    data[id] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
+                else
+                    data[id] = {Type = entry.Type, Value = val}
+                end
+            end
+            writefile(folderPath .. "/" .. currentName .. ".json", HttpService:JSONEncode(data))
+            ConfigDrop:Refresh(GetConfigs(), currentName)
+            WindowObj:Notify("Configuration", "Saved config: " .. currentName .. ".json", 3)
+        end
+    end, "Refresh List", function()
+        ConfigDrop:Refresh(GetConfigs(), selectedConfig)
+    end)
+
+    ConfigSec:CreateDualButtons("Load Config", function()
+        if readfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
+            local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(folderPath .. "/" .. selectedConfig .. ".json")) end)
+            if success and type(decoded) == "table" then
+                for id, entry in pairs(decoded) do
+                    if Library.Registry[id] and Library.Registry[id].Set then
+                        if entry.Type == "Color3" then
+                            Library.Registry[id].Set(Color3.new(entry.R, entry.G, entry.B))
+                        else
+                            Library.Registry[id].Set(entry.Value)
+                        end
+                    end
+                end
+                WindowObj:Notify("Configuration", "Loaded config: " .. selectedConfig, 3)
+            end
+        end
+    end, "Delete Config", function()
+        if delfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
+            delfile(folderPath .. "/" .. selectedConfig .. ".json")
+            ConfigDrop:Refresh(GetConfigs(), "")
+            WindowObj:Notify("Configuration", "Deleted config: " .. selectedConfig, 3)
+        end
+    end)
 
     OuterFrame.Size = UDim2.new(0, 760, 0, 0)
     task.delay(0.2, function()
