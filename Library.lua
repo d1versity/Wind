@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse] | v1.2
+-- Wind by d1versity [A.K.A. Vhyse] | v1.3
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -144,7 +144,7 @@ function Library:CreateWindow(titleText)
 
     -- [ WATERMARK SYSTEM ]
     local WMOuter = Create("Frame", { 
-        Size = UDim2.new(0, 0, 0, 36), 
+        Size = UDim2.new(0, 0, 0, 42), 
         Position = UDim2.new(0, 50, 0, 50), 
         BackgroundColor3 = Library.Theme.OuterBorder, 
         BackgroundTransparency = 0.4, 
@@ -165,35 +165,41 @@ function Library:CreateWindow(titleText)
     })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = WMInner })
     Create("UIStroke", { Color = Library.Theme.Border, Thickness = 1, Parent = WMInner })
-    Create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = WMInner })
+    Create("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12), Parent = WMInner })
     
-    local WMLayout = Create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 10), SortOrder = Enum.SortOrder.LayoutOrder, Parent = WMInner })
+    local WMLayout = Create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = WMInner })
 
     local function AddWMLine(order)
-        local line = Create("Frame", { Size = UDim2.new(0, 2, 0, 12), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, LayoutOrder = order, Parent = WMInner })
+        local line = Create("Frame", { Size = UDim2.new(0, 2, 0, 16), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, LayoutOrder = order, Parent = WMInner })
         Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = line })
     end
 
-    local WMAvatar = Create("ImageLabel", { Size = UDim2.new(0, 18, 0, 18), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", LayoutOrder = 1, Parent = WMInner })
-    Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WMAvatar })
+    local WMIcon = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundTransparency = 1, Image = Library.Icons.Wind, ImageColor3 = Library.Theme.Accent, LayoutOrder = 0, Parent = WMInner })
+    AddWMLine(1)
 
-    local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 11, LayoutOrder = 2, Parent = WMInner })
+    local WMAvatar = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", LayoutOrder = 2, Parent = WMInner })
+    Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WMAvatar })
     AddWMLine(3)
-    local WMTime = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = "00:00:00", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 11, LayoutOrder = 4, Parent = WMInner })
+
+    local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = 4, Parent = WMInner })
     AddWMLine(5)
-    local WMFPS = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, RichText = true, Text = "0 <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 11, LayoutOrder = 6, Parent = WMInner })
+    
+    local WMTime = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = "00:00:00", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 6, Parent = WMInner })
     AddWMLine(7)
+    
+    local WMFPS = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, RichText = true, Text = "0 <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 8, Parent = WMInner })
+    AddWMLine(9)
 
     local gameName = "Roblox"
     if game.PlaceId > 0 then
         task.spawn(function()
             pcall(function()
                 gameName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
-                if #gameName > 25 then gameName = gameName:sub(1, 25) .. "..." end
+                if #gameName > 30 then gameName = gameName:sub(1, 30) .. "..." end
             end)
         end)
     end
-    local WMGame = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = gameName, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 11, LayoutOrder = 8, Parent = WMInner })
+    local WMGame = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = gameName, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 10, Parent = WMInner })
 
     local lastTick, frames = tick(), 0
     RS.RenderStepped:Connect(function()
@@ -207,6 +213,10 @@ function Library:CreateWindow(titleText)
         WMGame.Text = gameName
     end)
 
+    -- Force Cache Initial Fade States
+    WMOuter.Visible = true
+    FadeUI(WMOuter, false, 0)
+    WMOuter.Visible = false
 
     -- [ MAIN WINDOW ]
     local OuterFrame = Create("Frame", { Size = UDim2.new(0, 760, 0, 510), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.5, -255), BackgroundColor3 = Library.Theme.OuterBorder, BackgroundTransparency = 0.4, BorderSizePixel = 0, ClipsDescendants = true, Parent = sg })
@@ -281,9 +291,11 @@ function Library:CreateWindow(titleText)
     local NotifContainer = Create("Frame", { Size = UDim2.new(0, 310, 1, -20), Position = UDim2.new(1, -330, 0, 10), BackgroundTransparency = 1, Parent = sg })
     Create("UIListLayout", { Padding = UDim.new(0, 10), VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = NotifContainer })
 
-    local WindowObj = { CurrentTab = nil, Tabs = {}, TabCount = 0 }
+    local WindowObj = { CurrentTab = nil, Tabs = {}, TabCount = 0, IsLoadingConfig = false }
     
     function WindowObj:Notify(title, text, duration)
+        if WindowObj.IsLoadingConfig then return end -- SUPPRESSES FLOOD DURING LOADS
+        
         duration = duration or 5
         local textBounds = TextService:GetTextSize(text, 12, Enum.Font.Gotham, Vector2.new(225, 9999))
         local descHeight = textBounds.Y
@@ -623,8 +635,14 @@ function Library:CreateWindow(titleText)
                 Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = TextBox })
                 Create("UIStroke", { Color = Library.Theme.Border, Parent = TextBox })
         
+                local function setInput(val)
+                    TextBox.Text = val
+                    callback(val)
+                end
+        
                 TextBox.FocusLost:Connect(function() callback(TextBox.Text) end)
                 RegEl(name, IFrame, 45)
+                return { Set = function(_, val) setInput(val) end }
             end
 
             function SectionObj:CreateToggle(name, default, callback)
@@ -883,93 +901,110 @@ function Library:CreateWindow(titleText)
 
             return SectionObj
         end
-        return TabObj
-    end
 
-    -- ========================================== --
-    --          CONFIG SYSTEM INTEGRATION         --
-    -- ========================================== --
-    local safeTitle = string.gsub(titleText, "[^%w%s_]", ""):gsub(" ", "")
-    local folderPath = "WindUI/" .. safeTitle
-    
-    if makefolder then
-        if not isfolder("WindUI") then makefolder("WindUI") end
-        if not isfolder(folderPath) then makefolder(folderPath) end
-    end
-
-    local ConfigTab = WindowObj:CreateTab("Configuration", "Save")
-    ConfigTab.Btn.LayoutOrder = 99999 -- Force absolute bottom 
-
-    local VisualsSec = ConfigTab:CreateSection("UI Options", "Left")
-    VisualsSec:CreateToggle("Show Watermark", false, function(v)
-        WMOuter.Visible = v
-    end)
-
-    local ConfigSec = ConfigTab:CreateSection("Config Manager", "Right")
-    local currentName = "Default"
-    
-    ConfigSec:CreateInput("Config Name", "Enter name...", function(val)
-        currentName = val
-    end)
-
-    local function GetConfigs()
-        local list = {}
-        if listfiles then
-            for _, file in ipairs(listfiles(folderPath)) do
-                local fileName = file:match("([^/\\]+)%.json$")
-                if fileName then table.insert(list, fileName) end
-            end
+        -- ========================================== --
+        --          CONFIG SYSTEM INTEGRATION         --
+        -- ========================================== --
+        local safeTitle = string.gsub(titleText, "[^%w%s_]", ""):gsub(" ", "")
+        local folderPath = "WindUI/" .. safeTitle
+        
+        if makefolder then
+            if not isfolder("WindUI") then makefolder("WindUI") end
+            if not isfolder(folderPath) then makefolder(folderPath) end
         end
-        return list
-    end
 
-    local selectedConfig = ""
-    local ConfigDrop = ConfigSec:CreateDropdown("Select Config", GetConfigs(), "", function(val)
-        selectedConfig = val
-    end)
+        local ConfigTab = WindowObj:CreateTab("Configuration", "Save")
+        ConfigTab.Btn.LayoutOrder = 99999 -- Force absolute bottom 
 
-    ConfigSec:CreateDualButtons("Save Config", function()
-        if writefile then
-            local data = {}
-            for id, entry in pairs(Library.Registry) do
-                local val = entry.Value
-                if entry.Type == "ColorPicker" and typeof(val) == "Color3" then
-                    data[id] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
-                else
-                    data[id] = {Type = entry.Type, Value = val}
+        local VisualsSec = ConfigTab:CreateSection("UI Options", "Left")
+        local isWMVisible = false
+        VisualsSec:CreateToggle("Show Watermark", false, function(v)
+            isWMVisible = v
+            if v then
+                WMOuter.Visible = true
+                FadeUI(WMOuter, true, 0.3)
+            else
+                FadeUI(WMOuter, false, 0.3)
+                task.delay(0.3, function() if not isWMVisible then WMOuter.Visible = false end end)
+            end
+        end)
+
+        local ConfigSec = ConfigTab:CreateSection("Config Manager", "Right")
+        local currentName = "Default"
+        
+        local ConfigInput
+        ConfigInput = ConfigSec:CreateInput("Config Name", "Enter name...", function(val)
+            currentName = val
+        end)
+
+        local function GetConfigs()
+            local list = {}
+            if listfiles then
+                for _, file in ipairs(listfiles(folderPath)) do
+                    local fileName = file:match("([^/\\]+)%.json$")
+                    if fileName then table.insert(list, fileName) end
                 end
             end
-            writefile(folderPath .. "/" .. currentName .. ".json", HttpService:JSONEncode(data))
-            ConfigDrop:Refresh(GetConfigs(), currentName)
-            WindowObj:Notify("Configuration", "Saved config: " .. currentName .. ".json", 3)
+            return list
         end
-    end, "Refresh List", function()
-        ConfigDrop:Refresh(GetConfigs(), selectedConfig)
-    end)
 
-    ConfigSec:CreateDualButtons("Load Config", function()
-        if readfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
-            local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(folderPath .. "/" .. selectedConfig .. ".json")) end)
-            if success and type(decoded) == "table" then
-                for id, entry in pairs(decoded) do
-                    if Library.Registry[id] and Library.Registry[id].Set then
-                        if entry.Type == "Color3" then
-                            Library.Registry[id].Set(Color3.new(entry.R, entry.G, entry.B))
-                        else
-                            Library.Registry[id].Set(entry.Value)
-                        end
+        local selectedConfig = ""
+        local ConfigDrop
+        ConfigDrop = ConfigSec:CreateDropdown("Select Config", GetConfigs(), "", function(val)
+            selectedConfig = val
+            if ConfigInput and val ~= "" then ConfigInput:Set(val) end
+        end)
+
+        ConfigSec:CreateDualButtons("Save Config", function()
+            if writefile then
+                local data = {}
+                for id, entry in pairs(Library.Registry) do
+                    local val = entry.Value
+                    if entry.Type == "ColorPicker" and typeof(val) == "Color3" then
+                        data[id] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
+                    else
+                        data[id] = {Type = entry.Type, Value = val}
                     end
                 end
-                WindowObj:Notify("Configuration", "Loaded config: " .. selectedConfig, 3)
+                writefile(folderPath .. "/" .. currentName .. ".json", HttpService:JSONEncode(data))
+                ConfigDrop:Refresh(GetConfigs(), currentName)
+                WindowObj:Notify("Configuration", "Saved config: " .. currentName .. ".json", 3)
             end
-        end
-    end, "Delete Config", function()
-        if delfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
-            delfile(folderPath .. "/" .. selectedConfig .. ".json")
-            ConfigDrop:Refresh(GetConfigs(), "")
-            WindowObj:Notify("Configuration", "Deleted config: " .. selectedConfig, 3)
-        end
-    end)
+        end, "Refresh List", function()
+            ConfigDrop:Refresh(GetConfigs(), selectedConfig)
+        end)
+
+        ConfigSec:CreateDualButtons("Load Config", function()
+            if readfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
+                local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(folderPath .. "/" .. selectedConfig .. ".json")) end)
+                if success and type(decoded) == "table" then
+                    WindowObj.IsLoadingConfig = true
+                    for id, entry in pairs(decoded) do
+                        if Library.Registry[id] and Library.Registry[id].Set then
+                            if entry.Type == "Color3" then
+                                Library.Registry[id].Set(Color3.new(entry.R, entry.G, entry.B))
+                            else
+                                Library.Registry[id].Set(entry.Value)
+                            end
+                        end
+                    end
+                    task.spawn(function()
+                        task.wait(0.1)
+                        WindowObj.IsLoadingConfig = false
+                        WindowObj:Notify("Configuration", "Loaded config: " .. selectedConfig, 3)
+                    end)
+                end
+            end
+        end, "Delete Config", function()
+            if delfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
+                delfile(folderPath .. "/" .. selectedConfig .. ".json")
+                ConfigDrop:Refresh(GetConfigs(), "")
+                WindowObj:Notify("Configuration", "Deleted config: " .. selectedConfig, 3)
+            end
+        end)
+
+        return TabObj
+    end
 
     OuterFrame.Size = UDim2.new(0, 760, 0, 0)
     task.delay(0.2, function()
