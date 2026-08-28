@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse] | v1.5
+-- Wind by d1versity [A.K.A. Vhyse] | v1.6
 -- Prolly the coolest UI I have ever made
 
 local Library = {
