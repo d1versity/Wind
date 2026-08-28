@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse] | v1.6
+-- Wind by d1versity [A.K.A. Vhyse] | v1.7
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -180,6 +180,7 @@ function Library:CreateWindow(titleText)
     local WMAvatar = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", LayoutOrder = 2, Parent = WMInner })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WMAvatar })
 
+    -- Removed AddWMLine between Avatar and Display Name
     local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = 4, Parent = WMInner })
     AddWMLine(5)
     
@@ -846,7 +847,7 @@ function Library:CreateWindow(titleText)
                     end
                     currentKey = parsedKey
                     
-                    -- False parameter indicates this is a key CHANGE, not a press
+                    -- Sends 'false' because the key is being assigned, not pressed
                     callback(currentKey, false)
                 end
                 Library.Registry[id].Set = setKey
@@ -890,7 +891,7 @@ function Library:CreateWindow(titleText)
                     
                     if not gp and currentKey ~= nil and not listening then
                         if input.KeyCode == currentKey or input.UserInputType == currentKey then
-                            -- True parameter indicates this is a physical key PRESS
+                            -- Sends 'true' because the key is physically pressed in-game
                             callback(currentKey, true)
                         end
                     end
