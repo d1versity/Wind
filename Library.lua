@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse] | v1.8
+-- Wind by d1versity [A.K.A. Vhyse] | v1.9
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -174,20 +174,35 @@ function Library:CreateWindow(titleText)
         Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = line })
     end
 
+    -- 0: Wind Logo
     local WMIcon = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundTransparency = 1, Image = Library.Icons.Wind, ImageColor3 = Library.Theme.Accent, LayoutOrder = 0, Parent = WMInner })
     
+    -- 1: Blue Line (between Wind Logo and Avatar)
+    AddWMLine(1)
+
+    -- 2: Avatar
     local WMAvatar = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", LayoutOrder = 2, Parent = WMInner })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WMAvatar })
 
-    local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = 4, Parent = WMInner })
+    -- 3: Display Name (NO LINE BETWEEN AVATAR AND NAME)
+    local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = 3, Parent = WMInner })
     
-    AddWMLine(5)
-    local WMTime = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = "00:00:00", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 6, Parent = WMInner })
+    -- 4: Blue Line
+    AddWMLine(4)
     
-    AddWMLine(7)
-    local WMFPS = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, RichText = true, Text = "0 <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 8, Parent = WMInner })
+    -- 5: Time
+    local WMTime = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = "00:00:00", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 5, Parent = WMInner })
     
-    AddWMLine(9)
+    -- 6: Blue Line
+    AddWMLine(6)
+    
+    -- 7: FPS
+    local WMFPS = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, RichText = true, Text = "0 <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 7, Parent = WMInner })
+    
+    -- 8: Blue Line
+    AddWMLine(8)
+    
+    -- 9: Game Name
     local gameName = "Roblox"
     if game.PlaceId > 0 then
         task.spawn(function()
@@ -197,7 +212,7 @@ function Library:CreateWindow(titleText)
             end)
         end)
     end
-    local WMGame = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = gameName, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 10, Parent = WMInner })
+    local WMGame = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = gameName, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 9, Parent = WMInner })
 
     local lastTick, frames = tick(), 0
     RS.RenderStepped:Connect(function()
@@ -216,7 +231,8 @@ function Library:CreateWindow(titleText)
     WMOuter.Visible = false
 
     -- [ MAIN WINDOW ]
-    local OuterFrame = Create("Frame", { Size = UDim2.new(0, 760, 0, 510), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.5, -255), BackgroundColor3 = Library.Theme.OuterBorder, BackgroundTransparency = 0.4, BorderSizePixel = 0, ClipsDescendants = true, Parent = sg })
+    -- FIXED: OuterFrame now starts at Height = 0 to completely prevent the 1-frame launch flicker
+    local OuterFrame = Create("Frame", { Size = UDim2.new(0, 760, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.5, -255), BackgroundColor3 = Library.Theme.OuterBorder, BackgroundTransparency = 0.4, BorderSizePixel = 0, ClipsDescendants = true, Parent = sg })
     Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = OuterFrame })
     MakeSmoothDraggable(OuterFrame, OuterFrame)
 
@@ -1005,7 +1021,6 @@ function Library:CreateWindow(titleText)
         end
     end)
 
-    OuterFrame.Size = UDim2.new(0, 760, 0, 0)
     task.delay(0.2, function()
         TS:Create(OuterFrame, TweenInfo.new(0.6, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = baseSize}):Play()
         task.delay(0.6, function() isAnimating = false end)
