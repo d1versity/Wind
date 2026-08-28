@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse] | v1.3
+-- Wind by d1versity [A.K.A. Vhyse] | v1.4
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -294,7 +294,7 @@ function Library:CreateWindow(titleText)
     local WindowObj = { CurrentTab = nil, Tabs = {}, TabCount = 0, IsLoadingConfig = false }
     
     function WindowObj:Notify(title, text, duration)
-        if WindowObj.IsLoadingConfig then return end -- SUPPRESSES FLOOD DURING LOADS
+        if WindowObj.IsLoadingConfig then return end
         
         duration = duration or 5
         local textBounds = TextService:GetTextSize(text, 12, Enum.Font.Gotham, Vector2.new(225, 9999))
@@ -545,7 +545,8 @@ function Library:CreateWindow(titleText)
             isSwitchingTab = false
         end)
 
-        if not WindowObj.CurrentTab then
+        -- Prevent the auto-generated config tab from stealing default focus
+        if not WindowObj.CurrentTab and tabName ~= "Configuration" then
             TabBase.Visible = true
             TabBtn.BackgroundColor3 = Library.Theme.ElementBg
             TabText.TextColor3 = Library.Theme.Text
@@ -901,110 +902,109 @@ function Library:CreateWindow(titleText)
 
             return SectionObj
         end
-
-        -- ========================================== --
-        --          CONFIG SYSTEM INTEGRATION         --
-        -- ========================================== --
-        local safeTitle = string.gsub(titleText, "[^%w%s_]", ""):gsub(" ", "")
-        local folderPath = "WindUI/" .. safeTitle
-        
-        if makefolder then
-            if not isfolder("WindUI") then makefolder("WindUI") end
-            if not isfolder(folderPath) then makefolder(folderPath) end
-        end
-
-        local ConfigTab = WindowObj:CreateTab("Configuration", "Save")
-        ConfigTab.Btn.LayoutOrder = 99999 -- Force absolute bottom 
-
-        local VisualsSec = ConfigTab:CreateSection("UI Options", "Left")
-        local isWMVisible = false
-        VisualsSec:CreateToggle("Show Watermark", false, function(v)
-            isWMVisible = v
-            if v then
-                WMOuter.Visible = true
-                FadeUI(WMOuter, true, 0.3)
-            else
-                FadeUI(WMOuter, false, 0.3)
-                task.delay(0.3, function() if not isWMVisible then WMOuter.Visible = false end end)
-            end
-        end)
-
-        local ConfigSec = ConfigTab:CreateSection("Config Manager", "Right")
-        local currentName = "Default"
-        
-        local ConfigInput
-        ConfigInput = ConfigSec:CreateInput("Config Name", "Enter name...", function(val)
-            currentName = val
-        end)
-
-        local function GetConfigs()
-            local list = {}
-            if listfiles then
-                for _, file in ipairs(listfiles(folderPath)) do
-                    local fileName = file:match("([^/\\]+)%.json$")
-                    if fileName then table.insert(list, fileName) end
-                end
-            end
-            return list
-        end
-
-        local selectedConfig = ""
-        local ConfigDrop
-        ConfigDrop = ConfigSec:CreateDropdown("Select Config", GetConfigs(), "", function(val)
-            selectedConfig = val
-            if ConfigInput and val ~= "" then ConfigInput:Set(val) end
-        end)
-
-        ConfigSec:CreateDualButtons("Save Config", function()
-            if writefile then
-                local data = {}
-                for id, entry in pairs(Library.Registry) do
-                    local val = entry.Value
-                    if entry.Type == "ColorPicker" and typeof(val) == "Color3" then
-                        data[id] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
-                    else
-                        data[id] = {Type = entry.Type, Value = val}
-                    end
-                end
-                writefile(folderPath .. "/" .. currentName .. ".json", HttpService:JSONEncode(data))
-                ConfigDrop:Refresh(GetConfigs(), currentName)
-                WindowObj:Notify("Configuration", "Saved config: " .. currentName .. ".json", 3)
-            end
-        end, "Refresh List", function()
-            ConfigDrop:Refresh(GetConfigs(), selectedConfig)
-        end)
-
-        ConfigSec:CreateDualButtons("Load Config", function()
-            if readfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
-                local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(folderPath .. "/" .. selectedConfig .. ".json")) end)
-                if success and type(decoded) == "table" then
-                    WindowObj.IsLoadingConfig = true
-                    for id, entry in pairs(decoded) do
-                        if Library.Registry[id] and Library.Registry[id].Set then
-                            if entry.Type == "Color3" then
-                                Library.Registry[id].Set(Color3.new(entry.R, entry.G, entry.B))
-                            else
-                                Library.Registry[id].Set(entry.Value)
-                            end
-                        end
-                    end
-                    task.spawn(function()
-                        task.wait(0.1)
-                        WindowObj.IsLoadingConfig = false
-                        WindowObj:Notify("Configuration", "Loaded config: " .. selectedConfig, 3)
-                    end)
-                end
-            end
-        end, "Delete Config", function()
-            if delfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
-                delfile(folderPath .. "/" .. selectedConfig .. ".json")
-                ConfigDrop:Refresh(GetConfigs(), "")
-                WindowObj:Notify("Configuration", "Deleted config: " .. selectedConfig, 3)
-            end
-        end)
-
         return TabObj
     end
+
+    -- ========================================== --
+    --          CONFIG SYSTEM INTEGRATION         --
+    -- ========================================== --
+    local safeTitle = string.gsub(titleText, "[^%w%s_]", ""):gsub(" ", "")
+    local folderPath = "WindUI/" .. safeTitle
+    
+    if makefolder then
+        if not isfolder("WindUI") then makefolder("WindUI") end
+        if not isfolder(folderPath) then makefolder(folderPath) end
+    end
+
+    local ConfigTab = WindowObj:CreateTab("Configuration", "Save")
+    ConfigTab.Btn.LayoutOrder = 99999
+
+    local VisualsSec = ConfigTab:CreateSection("UI Options", "Left")
+    local isWMVisible = false
+    VisualsSec:CreateToggle("Show Watermark", false, function(v)
+        isWMVisible = v
+        if v then
+            WMOuter.Visible = true
+            FadeUI(WMOuter, true, 0.3)
+        else
+            FadeUI(WMOuter, false, 0.3)
+            task.delay(0.3, function() if not isWMVisible then WMOuter.Visible = false end end)
+        end
+    end)
+
+    local ConfigSec = ConfigTab:CreateSection("Config Manager", "Right")
+    local currentName = "Default"
+    
+    local ConfigInput
+    ConfigInput = ConfigSec:CreateInput("Config Name", "Enter name...", function(val)
+        currentName = val
+    end)
+
+    local function GetConfigs()
+        local list = {}
+        if listfiles then
+            for _, file in ipairs(listfiles(folderPath)) do
+                local fileName = file:match("([^/\\]+)%.json$")
+                if fileName then table.insert(list, fileName) end
+            end
+        end
+        return list
+    end
+
+    local selectedConfig = ""
+    local ConfigDrop
+    ConfigDrop = ConfigSec:CreateDropdown("Select Config", GetConfigs(), "", function(val)
+        selectedConfig = val
+        if ConfigInput and val ~= "" then ConfigInput:Set(val) end
+    end)
+
+    ConfigSec:CreateDualButtons("Save Config", function()
+        if writefile then
+            local data = {}
+            for id, entry in pairs(Library.Registry) do
+                local val = entry.Value
+                if entry.Type == "ColorPicker" and typeof(val) == "Color3" then
+                    data[id] = {Type = "Color3", R = val.R, G = val.G, B = val.B}
+                else
+                    data[id] = {Type = entry.Type, Value = val}
+                end
+            end
+            writefile(folderPath .. "/" .. currentName .. ".json", HttpService:JSONEncode(data))
+            ConfigDrop:Refresh(GetConfigs(), currentName)
+            WindowObj:Notify("Configuration", "Saved config: " .. currentName .. ".json", 3)
+        end
+    end, "Refresh List", function()
+        ConfigDrop:Refresh(GetConfigs(), selectedConfig)
+    end)
+
+    ConfigSec:CreateDualButtons("Load Config", function()
+        if readfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
+            local success, decoded = pcall(function() return HttpService:JSONDecode(readfile(folderPath .. "/" .. selectedConfig .. ".json")) end)
+            if success and type(decoded) == "table" then
+                WindowObj.IsLoadingConfig = true
+                for id, entry in pairs(decoded) do
+                    if Library.Registry[id] and Library.Registry[id].Set then
+                        if entry.Type == "Color3" then
+                            Library.Registry[id].Set(Color3.new(entry.R, entry.G, entry.B))
+                        else
+                            Library.Registry[id].Set(entry.Value)
+                        end
+                    end
+                end
+                task.spawn(function()
+                    task.wait(0.1)
+                    WindowObj.IsLoadingConfig = false
+                    WindowObj:Notify("Configuration", "Loaded config: " .. selectedConfig, 3)
+                end)
+            end
+        end
+    end, "Delete Config", function()
+        if delfile and isfile(folderPath .. "/" .. selectedConfig .. ".json") then
+            delfile(folderPath .. "/" .. selectedConfig .. ".json")
+            ConfigDrop:Refresh(GetConfigs(), "")
+            WindowObj:Notify("Configuration", "Deleted config: " .. selectedConfig, 3)
+        end
+    end)
 
     OuterFrame.Size = UDim2.new(0, 760, 0, 0)
     task.delay(0.2, function()
