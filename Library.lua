@@ -1,4 +1,6 @@
--- Wind UI Library | v15.0 (Complete Edition)
+-- Wind by d1versity [A.K.A. Vhyse]
+-- Prolly the coolest UI I have ever made
+
 local Library = {
     Theme = {
         OuterBorder = Color3.fromRGB(5, 5, 5),
@@ -480,7 +482,9 @@ function Library:CreateWindow(titleText)
             local STitle = Create("TextLabel", { Size = UDim2.new(1, -20, 0, 30), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = string.upper(sectionName), TextColor3 = Library.Theme.SubText, Font = Enum.Font.GothamBold, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, Parent = SectionFrame })
 
             local ElementContainer = Create("Frame", { Size = UDim2.new(1, 0, 1, -30), Position = UDim2.new(0, 0, 0, 30), BackgroundTransparency = 1, Parent = SectionFrame })
-            local ELayout = Create("UIListLayout", { Padding = UDim.new(0, 2), Parent = ElementContainer })
+            
+            -- FIX: Set SortOrder to LayoutOrder so elements render strictly in insertion sequence
+            local ELayout = Create("UIListLayout", { Padding = UDim.new(0, 2), SortOrder = Enum.SortOrder.LayoutOrder, Parent = ElementContainer })
 
             ELayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 SectionFrame.Size = UDim2.new(1, 0, 0, ELayout.AbsoluteContentSize.Y + 35)
@@ -489,8 +493,11 @@ function Library:CreateWindow(titleText)
 
             TabObj.Sections[SectionFrame] = {Title = STitle, Stroke = SStroke, IsVisible = true, Elements = {}}
             local SectionObj = {}
+            local elementCount = 0 -- FIX: Internal counter to assign LayoutOrder
             
             local function RegEl(name, frame, origH)
+                elementCount = elementCount + 1
+                frame.LayoutOrder = elementCount -- Force element down the list
                 frame.ClipsDescendants = true
                 table.insert(TabObj.Sections[SectionFrame].Elements, {Name = name, Frame = frame, OrigH = origH, IsVisible = true})
             end
@@ -761,6 +768,7 @@ function Library:CreateWindow(titleText)
                             BindBtn.Text = newKeyStr
                             Library.Registry[id].Value = newKeyStr
                             TS:Create(BindBtn, TweenInfo.new(0.15), {TextTransparency = 0}):Play()
+                            callback(currentKey)
                         end
                         return 
                     end
@@ -780,7 +788,6 @@ function Library:CreateWindow(titleText)
         return TabObj
     end
 
-    -- Initial Rollup Intro
     OuterFrame.Size = UDim2.new(0, 760, 0, 0)
     task.delay(0.2, function()
         TS:Create(OuterFrame, TweenInfo.new(0.6, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = baseSize}):Play()
