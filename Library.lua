@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse] | v1
+-- Wind by d1versity [A.K.A. Vhyse] | v1.1
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -35,7 +35,7 @@ local Library = {
     Registry = {},
     Connections = {},
     AllowDrag = true,
-    ColorClipboard = Color3.fromRGB(255, 255, 255) -- Internal clipboard
+    ColorClipboard = Color3.fromRGB(255, 255, 255)
 }
 
 local TS = game:GetService("TweenService")
@@ -46,9 +46,6 @@ local TextService = game:GetService("TextService")
 local HttpService = game:GetService("HttpService")
 local LocalPlayer = Players.LocalPlayer
 
--- ========================================== --
---             UTILITY FUNCTIONS              --
--- ========================================== --
 local function Create(className, properties)
     local inst = Instance.new(className)
     for k, v in pairs(properties) do inst[k] = v end
@@ -137,9 +134,6 @@ local function FadeUI(element, isVisible, duration)
     end
 end
 
--- ========================================== --
---             CORE WINDOW LOGIC              --
--- ========================================== --
 function Library:CreateWindow(titleText)
     local sg = Create("ScreenGui", {
         Name = "Wind_UI",
@@ -148,12 +142,28 @@ function Library:CreateWindow(titleText)
         Parent = (gethui and gethui()) or game:GetService("CoreGui")
     })
 
-    -- [ WATERMARK SYSTEM ]
-    local WMOuter = Create("Frame", { Size = UDim2.new(0, 0, 0, 36), Position = UDim2.new(0, 50, 0, 50), BackgroundColor3 = Library.Theme.OuterBorder, BackgroundTransparency = 0.4, BorderSizePixel = 0, AutomaticSize = Enum.AutomaticSize.X, Visible = false, Parent = sg })
+    -- [ WATERMARK SYSTEM FREEZE PATCH ]
+    local WMOuter = Create("Frame", { 
+        Size = UDim2.new(0, 0, 0, 36), 
+        Position = UDim2.new(0, 50, 0, 50), 
+        BackgroundColor3 = Library.Theme.OuterBorder, 
+        BackgroundTransparency = 0.4, 
+        BorderSizePixel = 0, 
+        AutomaticSize = Enum.AutomaticSize.X, 
+        Visible = false, 
+        Parent = sg 
+    })
     Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = WMOuter })
+    Create("UIPadding", { PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5), Parent = WMOuter })
     MakeSmoothDraggable(WMOuter, WMOuter)
     
-    local WMInner = Create("Frame", { Size = UDim2.new(1, -10, 1, -10), Position = UDim2.new(0, 5, 0, 5), BackgroundColor3 = Library.Theme.MainBg, AutomaticSize = Enum.AutomaticSize.X, Parent = WMOuter })
+    -- Removed conflicting Scale = 1 and Position offsets. Replaced with relative zero sizing and UIPadding.
+    local WMInner = Create("Frame", { 
+        Size = UDim2.new(0, 0, 1, 0), 
+        BackgroundColor3 = Library.Theme.MainBg, 
+        AutomaticSize = Enum.AutomaticSize.X, 
+        Parent = WMOuter 
+    })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = WMInner })
     Create("UIStroke", { Color = Library.Theme.Border, Thickness = 1, Parent = WMInner })
     Create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = WMInner })
@@ -304,9 +314,6 @@ function Library:CreateWindow(titleText)
         end)
     end
 
-    -- ========================================== --
-    --             COLOR PICKER WINDOW            --
-    -- ========================================== --
     local CPBg = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Visible = false, ZIndex = 50, Parent = MainFrame })
     local CPWindow = Create("Frame", { Size = UDim2.new(0, 240, 0, 350), Position = UDim2.new(0.5, -120, 0.5, -175), BackgroundColor3 = Library.Theme.MainBg, ZIndex = 51, Parent = CPBg })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = CPWindow })
@@ -426,9 +433,6 @@ function Library:CreateWindow(titleText)
         FadeUI(CPWindow, true, 0.2)
     end
 
-    -- ========================================== --
-    --                 TAB CREATION               --
-    -- ========================================== --
     local isSwitchingTab = false
 
     SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
