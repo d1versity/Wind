@@ -1,4 +1,4 @@
--- Wind by d1versity | v2.3
+-- Wind by d1versity | v2.4
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -277,8 +277,8 @@ local function PlayIntro(parentGui, onComplete)
 
         -- 8. Fade out black overlay and launch main window
         if onComplete then onComplete() end
-        TS:Create(IntroOverlay, TweenInfo.new(0.75, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
-        task.wait(0.8)
+        TS:Create(IntroOverlay, TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
+        task.wait(0.9)
         IntroOverlay:Destroy()
     end)
 end
