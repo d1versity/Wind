@@ -1,4 +1,4 @@
--- Wind by d1versity | v2.1
+-- Wind by d1versity | v2.2
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -159,6 +159,129 @@ local function FadeUI(element, isVisible, duration)
     else
         TS:Create(proxy, TweenInfo.new(duration, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Value = target}):Play()
     end
+end
+
+local function PlayIntro(parentGui, onComplete)
+    local IntroOverlay = Create("Frame", {
+        Name = "WindIntro",
+        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 1000,
+        Parent = parentGui
+    })
+
+    -- Mask container that shrinks from right to left in sync with the wipe line
+    local ClipContainer = Create("Frame", {
+        Size = UDim2.new(0, 340, 0, 100),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Position = UDim2.new(0.5, -170, 0.5, 0),
+        BackgroundTransparency = 1,
+        ClipsDescendants = true,
+        ZIndex = 1001,
+        Parent = IntroOverlay
+    })
+
+    local IntroIcon = Create("ImageLabel", {
+        Size = UDim2.new(0, 54, 0, 54),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0, 170, 0.5, 0),
+        BackgroundTransparency = 1,
+        Image = GetLucideIcon("wind"),
+        ImageColor3 = Library.Theme.Accent,
+        ImageTransparency = 1,
+        ZIndex = 1002,
+        Parent = ClipContainer
+    })
+
+    local TitleLabel = Create("TextLabel", {
+        Size = UDim2.new(0, 220, 0, 36),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Position = UDim2.new(0, 122, 0.5, -12),
+        BackgroundTransparency = 1,
+        Text = "Wind UI",
+        TextColor3 = Library.Theme.Text,
+        Font = Enum.Font.GothamBlack,
+        TextSize = 32,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTransparency = 1,
+        ZIndex = 1002,
+        Parent = ClipContainer
+    })
+
+    local SubLabel = Create("TextLabel", {
+        Size = UDim2.new(0, 220, 0, 20),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Position = UDim2.new(0, 124, 0.5, 16),
+        BackgroundTransparency = 1,
+        Text = "Brought to you by Ege",
+        TextColor3 = Library.Theme.SubText,
+        Font = Enum.Font.GothamMedium,
+        TextSize = 13,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTransparency = 1,
+        ZIndex = 1002,
+        Parent = ClipContainer
+    })
+
+    local WipeLine = Create("Frame", {
+        Size = UDim2.new(0, 3, 0, 0),
+        AnchorPoint = Vector2.new(0.5, 1),
+        Position = UDim2.new(0.5, 170, 0.5, 42),
+        BackgroundColor3 = Library.Theme.Accent,
+        BorderSizePixel = 0,
+        ZIndex = 1003,
+        Parent = IntroOverlay
+    })
+    Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WipeLine })
+
+    task.spawn(function()
+        -- 1. Fade screen to pitch black
+        TS:Create(IntroOverlay, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
+        task.wait(0.65)
+
+        -- 2. Fade in Wind icon at the center
+        TS:Create(IntroIcon, TweenInfo.new(0.45, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {ImageTransparency = 0}):Play()
+        task.wait(0.55)
+
+        -- 3. Smoothly slide icon slightly to the left
+        TS:Create(IntroIcon, TweenInfo.new(0.55, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0, 72, 0.5, 0)}):Play()
+        task.wait(0.2)
+
+        -- 4. Fade in title and subtitle to the right of the icon
+        TS:Create(TitleLabel, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+            TextTransparency = 0,
+            Position = UDim2.new(0, 112, 0.5, -12)
+        }):Play()
+        task.wait(0.12)
+        TS:Create(SubLabel, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+            TextTransparency = 0,
+            Position = UDim2.new(0, 114, 0.5, 16)
+        }):Play()
+        task.wait(0.95)
+
+        -- 5. Animate blue line growing from bottom to top
+        TS:Create(WipeLine, TweenInfo.new(0.35, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = UDim2.new(0, 3, 0, 84)}):Play()
+        task.wait(0.4)
+
+        -- 6. Sweep line across from right to left, wiping out the text and icon smoothly
+        local wipeInfo = TweenInfo.new(0.65, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut)
+        TS:Create(WipeLine, wipeInfo, {Position = UDim2.new(0.5, -170, 0.5, 42)}):Play()
+        TS:Create(ClipContainer, wipeInfo, {Size = UDim2.new(0, 0, 0, 100)}):Play()
+        task.wait(0.75)
+
+        -- 7. Shrink line smoothly from top to bottom
+        TS:Create(WipeLine, TweenInfo.new(0.35, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {Size = UDim2.new(0, 3, 0, 0)}):Play()
+        task.wait(0.4)
+
+        -- 8. Fade out black overlay and launch main window
+        if onComplete then onComplete() end
+        TS:Create(IntroOverlay, TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
+        task.wait(0.6)
+        IntroOverlay:Destroy()
+    end)
 end
 
 function Library:CreateWindow(titleText)
@@ -1064,7 +1187,8 @@ function Library:CreateWindow(titleText)
         end
     end)
 
-    task.delay(0.2, function()
+    -- Play cinematic intro, then smoothly open the main window
+    PlayIntro(sg, function()
         TS:Create(OuterFrame, TweenInfo.new(0.6, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = baseSize}):Play()
         task.delay(0.6, function() isAnimating = false end)
     end)
