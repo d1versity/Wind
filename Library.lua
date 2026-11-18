@@ -1,4 +1,4 @@
--- Wind by d1versity / Ege | v2.5
+-- Wind by d1versity / Ege | v2.6
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -300,11 +300,14 @@ local function PlayIntro(parentGui, onComplete)
         -- Pause on the black screen before fading out
         task.wait(0.5)
 
-        -- 8. Fade out black overlay and launch main window
-        if onComplete then onComplete() end
+        -- 8. Fade out black overlay completely
         TS:Create(IntroOverlay, TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
-        task.wait(0.9)
+        task.wait(0.85)
         IntroOverlay:Destroy()
+
+        -- 9. Brief pause after fade out, then launch main window
+        task.wait(0.15)
+        if onComplete then onComplete() end
     end)
 end
 
@@ -433,8 +436,11 @@ function Library:CreateWindow(titleText)
     RegisterAccent(Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), Position = UDim2.new(0, 16, 0.5, -12), BackgroundTransparency = 1, Image = GetLucideIcon("wind"), ImageColor3 = Library.Theme.Accent, Parent = LogoArea }), "ImageColor3")
     Create("TextLabel", { Size = UDim2.new(1, -50, 0, 20), Position = UDim2.new(0, 48, 0.5, -10), BackgroundTransparency = 1, Text = titleText, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, Parent = LogoArea })
 
-    local TabContainer = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, -140), Position = UDim2.new(0, 0, 0, 70), BackgroundTransparency = 1, ScrollBarThickness = 0, Parent = Sidebar })
-    Create("UIListLayout", { Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = TabContainer })
+    local TabContainer = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, -140), Position = UDim2.new(0, 0, 0, 70), BackgroundTransparency = 1, ScrollBarThickness = 0, CanvasSize = UDim2.new(0, 0, 0, 0), Parent = Sidebar })
+    local TabLayout = Create("UIListLayout", { Padding = UDim.new(0, 5), HorizontalAlignment = Enum.HorizontalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Parent = TabContainer })
+    TabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        TabContainer.CanvasSize = UDim2.new(0, 0, 0, TabLayout.AbsoluteContentSize.Y + 10)
+    end)
 
     local ProfileArea = Create("Frame", { Size = UDim2.new(1, 0, 0, 70), Position = UDim2.new(0, 0, 1, -70), BackgroundTransparency = 1, Parent = Sidebar })
     local Avatar = Create("ImageLabel", { Size = UDim2.new(0, 32, 0, 32), Position = UDim2.new(0, 15, 0.5, -16), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", Parent = ProfileArea })
@@ -491,10 +497,14 @@ function Library:CreateWindow(titleText)
     local NotifContainer = Create("Frame", { Size = UDim2.new(0, 310, 1, -20), Position = UDim2.new(1, -330, 0, 10), BackgroundTransparency = 1, Parent = sg })
     Create("UIListLayout", { Padding = UDim.new(0, 10), VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = NotifContainer })
 
-    local WindowObj = { CurrentTab = nil, Tabs = {}, TabCount = 0, IsLoadingConfig = false }
+    local WindowObj = { CurrentTab = nil, Tabs = {}, TabCount = 0, IsLoadingConfig = false, IntroFinished = false, QueuedNotifs = {} }
     
     function WindowObj:Notify(title, text, duration)
         if WindowObj.IsLoadingConfig then return end
+        if not WindowObj.IntroFinished then
+            table.insert(WindowObj.QueuedNotifs, {title, text, duration})
+            return
+        end
         
         duration = duration or 5
         local textBounds = TextService:GetTextSize(text, 12, Enum.Font.Gotham, Vector2.new(225, 9999))
@@ -1238,10 +1248,17 @@ function Library:CreateWindow(titleText)
         end
     end)
 
-    -- Play cinematic intro, then smoothly open the main window
+    -- Play cinematic intro, then smoothly open the main window and release queued notifications
     PlayIntro(sg, function()
         TS:Create(OuterFrame, TweenInfo.new(0.6, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = baseSize}):Play()
-        task.delay(0.6, function() isAnimating = false end)
+        task.delay(0.6, function()
+            isAnimating = false
+            WindowObj.IntroFinished = true
+            for _, n in ipairs(WindowObj.QueuedNotifs) do
+                WindowObj:Notify(n[1], n[2], n[3])
+            end
+            table.clear(WindowObj.QueuedNotifs)
+        end)
     end)
     
     getgenv().WindUI_Active = WindowObj
