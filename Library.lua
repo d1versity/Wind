@@ -1,4 +1,4 @@
--- Wind by d1versity [A.K.A. Vhyse] | v1.9
+-- Wind by d1versity | v2.1
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -14,24 +14,13 @@ local Library = {
         ElementBg = Color3.fromRGB(22, 23, 28),
         Hover = Color3.fromRGB(30, 31, 38)
     },
-    Icons = {
-        Wind        = "rbxassetid://10747382750",
-        Person      = "rbxassetid://10747373176",
-        Warning     = "rbxassetid://10709753149",
-        Info        = "rbxassetid://10723415903",
-        Settings    = "rbxassetid://10734950309",
-        Target      = "rbxassetid://10734977012",
-        Crosshair   = "rbxassetid://10709818534",
-        Gun         = "rbxassetid://10709818534",
-        Repeat      = "rbxassetid://10734933966",
-        Eye         = "rbxassetid://10723346959",
-        Home        = "rbxassetid://10723407389",
-        Search      = "rbxassetid://10734943674",
-        Shield      = "rbxassetid://10734951847",
-        Code        = "rbxassetid://10709810463",
-        Crystal     = "rbxassetid://7734053426",
-        Save        = "rbxassetid://10734950309" 
+    IconAliases = {
+        Person = "user",
+        Warning = "alert-triangle",
+        Gun = "crosshair",
+        Crystal = "gem"
     },
+    IconCache = {},
     Registry = {},
     Connections = {},
     AllowDrag = true,
@@ -50,6 +39,44 @@ local function Create(className, properties)
     local inst = Instance.new(className)
     for k, v in pairs(properties) do inst[k] = v end
     return inst
+end
+
+local function GetLucideIcon(iconName)
+    if not iconName or iconName == "" then return "" end
+    if string.find(iconName, "rbxassetid://") or string.find(iconName, "rbxthumb://") then
+        return iconName
+    end
+
+    local name = Library.IconAliases[iconName] or iconName
+    name = name:gsub("(%u)", function(c) return "-" .. c:lower() end):gsub("^%-", "")
+
+    if Library.IconCache[name] then
+        return Library.IconCache[name]
+    end
+
+    if writefile and getcustomasset and isfile and makefolder then
+        if not isfolder("WindUI") then makefolder("WindUI") end
+        if not isfolder("WindUI/Icons") then makefolder("WindUI/Icons") end
+
+        local filePath = "WindUI/Icons/" .. name .. ".png"
+        if not isfile(filePath) then
+            local url = "https://wsrv.nl/?url=https://api.iconify.design/lucide/" .. name .. ".svg?color=%23ffffff&output=png&w=64&h=64"
+            local ok, res = pcall(function() return game:HttpGet(url) end)
+            if ok and res and #res > 100 then
+                writefile(filePath, res)
+            else
+                return ""
+            end
+        end
+
+        local ok, asset = pcall(getcustomasset, filePath)
+        if ok and asset then
+            Library.IconCache[name] = asset
+            return asset
+        end
+    end
+
+    return ""
 end
 
 local function MakeSmoothDraggable(dragHandle, frameToMove)
@@ -135,6 +162,13 @@ local function FadeUI(element, isVisible, duration)
 end
 
 function Library:CreateWindow(titleText)
+    if getgenv().WindUI_Active then
+        if getgenv().WindUI_Active.Notify then
+            getgenv().WindUI_Active:Notify("Wind UI", "Script is already running!", 3)
+        end
+        error("Wind UI is already running.", 0)
+    end
+
     local sg = Create("ScreenGui", {
         Name = "Wind_UI",
         ResetOnSpawn = false,
@@ -175,7 +209,7 @@ function Library:CreateWindow(titleText)
     end
 
     -- 0: Wind Logo
-    local WMIcon = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundTransparency = 1, Image = Library.Icons.Wind, ImageColor3 = Library.Theme.Accent, LayoutOrder = 0, Parent = WMInner })
+    local WMIcon = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundTransparency = 1, Image = GetLucideIcon("wind"), ImageColor3 = Library.Theme.Accent, LayoutOrder = 0, Parent = WMInner })
     
     -- 1: Blue Line (between Wind Logo and Avatar)
     AddWMLine(1)
@@ -231,7 +265,6 @@ function Library:CreateWindow(titleText)
     WMOuter.Visible = false
 
     -- [ MAIN WINDOW ]
-    -- FIXED: OuterFrame now starts at Height = 0 to completely prevent the 1-frame launch flicker
     local OuterFrame = Create("Frame", { Size = UDim2.new(0, 760, 0, 0), AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0.5, -255), BackgroundColor3 = Library.Theme.OuterBorder, BackgroundTransparency = 0.4, BorderSizePixel = 0, ClipsDescendants = true, Parent = sg })
     Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = OuterFrame })
     MakeSmoothDraggable(OuterFrame, OuterFrame)
@@ -245,7 +278,7 @@ function Library:CreateWindow(titleText)
     Create("Frame", { Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(1, -1, 0, 0), BackgroundColor3 = Library.Theme.Border, BorderSizePixel = 0, Parent = Sidebar })
 
     local LogoArea = Create("Frame", { Size = UDim2.new(1, 0, 0, 70), BackgroundTransparency = 1, Parent = Sidebar })
-    Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), Position = UDim2.new(0, 16, 0.5, -12), BackgroundTransparency = 1, Image = Library.Icons.Wind, ImageColor3 = Library.Theme.Accent, Parent = LogoArea })
+    Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), Position = UDim2.new(0, 16, 0.5, -12), BackgroundTransparency = 1, Image = GetLucideIcon("wind"), ImageColor3 = Library.Theme.Accent, Parent = LogoArea })
     Create("TextLabel", { Size = UDim2.new(1, -50, 0, 20), Position = UDim2.new(0, 48, 0.5, -10), BackgroundTransparency = 1, Text = titleText, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, Parent = LogoArea })
 
     local TabContainer = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, -140), Position = UDim2.new(0, 0, 0, 70), BackgroundTransparency = 1, ScrollBarThickness = 0, Parent = Sidebar })
@@ -259,7 +292,7 @@ function Library:CreateWindow(titleText)
     local ContentContainer = Create("Frame", { Size = UDim2.new(1, -190, 1, 0), Position = UDim2.new(0, 190, 0, 0), BackgroundTransparency = 1, Parent = MainFrame })
 
     local TopBar = Create("Frame", { Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, Parent = ContentContainer })
-    local SearchBtn = Create("ImageButton", { Size = UDim2.new(0, 18, 0, 18), Position = UDim2.new(1, -30, 0.5, -9), BackgroundTransparency = 1, Image = Library.Icons.Search, ImageColor3 = Library.Theme.SubText, Parent = TopBar })
+    local SearchBtn = Create("ImageButton", { Size = UDim2.new(0, 18, 0, 18), Position = UDim2.new(1, -30, 0.5, -9), BackgroundTransparency = 1, Image = GetLucideIcon("search"), ImageColor3 = Library.Theme.SubText, Parent = TopBar })
     
     local SearchBox = Create("TextBox", { Size = UDim2.new(0, 0, 0, 28), Position = UDim2.new(1, -60, 0.5, -14), AnchorPoint = Vector2.new(1, 0), BackgroundColor3 = Library.Theme.ElementBg, TextColor3 = Library.Theme.Text, PlaceholderText = "Search...", Text = "", Font = Enum.Font.Gotham, TextSize = 12, ClipsDescendants = true, Visible = false, Parent = TopBar })
     Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = SearchBox })
@@ -322,7 +355,7 @@ function Library:CreateWindow(titleText)
         Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = NFrame })
         Create("UIStroke", { Color = Library.Theme.Border, Parent = NFrame })
         
-        local Icon = Create("ImageLabel", { Size = UDim2.new(0, 22, 0, 22), Position = UDim2.new(0, 15, 0, 12), BackgroundTransparency = 1, Image = Library.Icons.Info, ImageColor3 = Library.Theme.Accent, Parent = NFrame })
+        local Icon = Create("ImageLabel", { Size = UDim2.new(0, 22, 0, 22), Position = UDim2.new(0, 15, 0, 12), BackgroundTransparency = 1, Image = GetLucideIcon("info"), ImageColor3 = Library.Theme.Accent, Parent = NFrame })
         Create("TextLabel", { Size = UDim2.new(1, -55, 0, 20), Position = UDim2.new(0, 48, 0, 10), BackgroundTransparency = 1, Text = title, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = NFrame })
         Create("TextLabel", { Size = UDim2.new(1, -55, 0, descHeight), Position = UDim2.new(0, 48, 0, 32), BackgroundTransparency = 1, Text = text, TextColor3 = Library.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, Parent = NFrame })
         
@@ -501,7 +534,7 @@ function Library:CreateWindow(titleText)
     end)
 
     function WindowObj:CreateTab(tabName, iconName)
-        local realIcon = Library.Icons[iconName] or iconName or Library.Icons.Settings
+        local realIcon = GetLucideIcon(iconName or "settings")
         WindowObj.TabCount = WindowObj.TabCount + 1
 
         local TabBtn = Create("TextButton", { Size = UDim2.new(1, -20, 0, 36), BackgroundColor3 = Library.Theme.SidebarBg, Text = "", AutoButtonColor = false, LayoutOrder = WindowObj.TabCount, Parent = TabContainer })
@@ -792,11 +825,21 @@ function Library:CreateWindow(titleText)
                 Create("TextLabel", { Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 10, 0, 5), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = SFrame })
                 local ValLbl = Create("TextLabel", { Size = UDim2.new(0, 40, 0, 20), Position = UDim2.new(1, -50, 0, 5), BackgroundTransparency = 1, Text = tostring(val), TextColor3 = Library.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Right, Parent = SFrame })
 
-                local TrackBtn = Create("TextButton", { Size = UDim2.new(1, -20, 0, 4), Position = UDim2.new(0, 10, 0, 30), BackgroundColor3 = Library.Theme.ElementBg, Text = "", AutoButtonColor = false, Parent = SFrame })
+                local Hitbox = Create("TextButton", {
+                    Size = UDim2.new(1, -10, 0, 22),
+                    Position = UDim2.new(0, 5, 0, 21),
+                    BackgroundTransparency = 1,
+                    Text = "",
+                    AutoButtonColor = false,
+                    ZIndex = 2,
+                    Parent = SFrame
+                })
+
+                local TrackBtn = Create("Frame", { Size = UDim2.new(1, -20, 0, 4), Position = UDim2.new(0, 10, 0, 30), BackgroundColor3 = Library.Theme.ElementBg, BorderSizePixel = 0, Parent = SFrame })
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = TrackBtn })
-                local Fill = Create("Frame", { Size = UDim2.new((val - min)/(max - min), 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, Parent = TrackBtn })
+                local Fill = Create("Frame", { Size = UDim2.new((val - min)/(max - min), 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Parent = TrackBtn })
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Fill })
-                local Thumb = Create("Frame", { Size = UDim2.new(0, 10, 0, 10), Position = UDim2.new(1, -5, 0.5, -5), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Fill })
+                local Thumb = Create("Frame", { Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(1, -6, 0.5, -6), BackgroundColor3 = Color3.fromRGB(255, 255, 255), BorderSizePixel = 0, Parent = Fill })
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Thumb })
 
                 local dragging = false
@@ -815,7 +858,7 @@ function Library:CreateWindow(titleText)
                     setSlider(math.floor(min + (max - min) * percent))
                 end
 
-                TrackBtn.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true updateSlider(input) end end)
+                Hitbox.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true updateSlider(input) end end)
                 UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
                 UIS.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end end)
 
@@ -1026,6 +1069,7 @@ function Library:CreateWindow(titleText)
         task.delay(0.6, function() isAnimating = false end)
     end)
     
+    getgenv().WindUI_Active = WindowObj
     return WindowObj
 end
 
