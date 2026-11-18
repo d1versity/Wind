@@ -1,4 +1,4 @@
--- Wind by d1versity | v2.4
+-- Wind by d1versity / Ege | v2.5
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -23,6 +23,8 @@ local Library = {
     IconCache = {},
     Registry = {},
     Connections = {},
+    AccentObjects = {},
+    AccentCallbacks = {},
     AllowDrag = true,
     ColorClipboard = Color3.fromRGB(255, 255, 255)
 }
@@ -39,6 +41,26 @@ local function Create(className, properties)
     local inst = Instance.new(className)
     for k, v in pairs(properties) do inst[k] = v end
     return inst
+end
+
+local function RegisterAccent(obj, prop)
+    table.insert(Library.AccentObjects, {Obj = obj, Prop = prop})
+    return obj
+end
+
+local function UpdateAccent(newColor)
+    Library.Theme.Accent = newColor
+    for i = #Library.AccentObjects, 1, -1 do
+        local entry = Library.AccentObjects[i]
+        if entry.Obj and entry.Obj.Parent then
+            entry.Obj[entry.Prop] = newColor
+        else
+            table.remove(Library.AccentObjects, i)
+        end
+    end
+    for _, cb in ipairs(Library.AccentCallbacks) do
+        pcall(cb, newColor)
+    end
 end
 
 local function GetLucideIcon(iconName)
@@ -275,6 +297,9 @@ local function PlayIntro(parentGui, onComplete)
         TS:Create(WipeLine, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {Size = UDim2.new(0, 4, 0, 0)}):Play()
         task.wait(0.55)
 
+        -- Pause on the black screen before fading out
+        task.wait(0.5)
+
         -- 8. Fade out black overlay and launch main window
         if onComplete then onComplete() end
         TS:Create(IntroOverlay, TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
@@ -326,36 +351,40 @@ function Library:CreateWindow(titleText)
     local WMLayout = Create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = WMInner })
 
     local function AddWMLine(order)
-        local line = Create("Frame", { Size = UDim2.new(0, 2, 0, 16), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, LayoutOrder = order, Parent = WMInner })
+        local line = RegisterAccent(Create("Frame", { Size = UDim2.new(0, 2, 0, 16), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, LayoutOrder = order, Parent = WMInner }), "BackgroundColor3")
         Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = line })
     end
 
     -- 0: Wind Logo
-    local WMIcon = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundTransparency = 1, Image = GetLucideIcon("wind"), ImageColor3 = Library.Theme.Accent, LayoutOrder = 0, Parent = WMInner })
+    local WMIcon = RegisterAccent(Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundTransparency = 1, Image = GetLucideIcon("wind"), ImageColor3 = Library.Theme.Accent, LayoutOrder = 0, Parent = WMInner }), "ImageColor3")
     
-    -- 1: Blue Line (between Wind Logo and Avatar)
+    -- 1: Accent Line
     AddWMLine(1)
 
     -- 2: Avatar
     local WMAvatar = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", LayoutOrder = 2, Parent = WMInner })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WMAvatar })
 
-    -- 3: Display Name (NO LINE BETWEEN AVATAR AND NAME)
+    -- 3: Display Name
     local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = 3, Parent = WMInner })
     
-    -- 4: Blue Line
+    -- 4: Accent Line
     AddWMLine(4)
     
     -- 5: Time
     local WMTime = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = "00:00:00", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 5, Parent = WMInner })
     
-    -- 6: Blue Line
+    -- 6: Accent Line
     AddWMLine(6)
     
     -- 7: FPS
+    local currentFPS = 0
     local WMFPS = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, RichText = true, Text = "0 <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 7, Parent = WMInner })
+    table.insert(Library.AccentCallbacks, function(newColor)
+        WMFPS.Text = currentFPS .. " <font color='#"..newColor:ToHex().."'>FPS</font>"
+    end)
     
-    -- 8: Blue Line
+    -- 8: Accent Line
     AddWMLine(8)
     
     -- 9: Game Name
@@ -374,7 +403,8 @@ function Library:CreateWindow(titleText)
     RS.RenderStepped:Connect(function()
         frames = frames + 1
         if tick() - lastTick >= 1 then
-            WMFPS.Text = frames .. " <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>"
+            currentFPS = frames
+            WMFPS.Text = currentFPS .. " <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>"
             frames = 0
             lastTick = tick()
         end
@@ -400,7 +430,7 @@ function Library:CreateWindow(titleText)
     Create("Frame", { Size = UDim2.new(0, 1, 1, 0), Position = UDim2.new(1, -1, 0, 0), BackgroundColor3 = Library.Theme.Border, BorderSizePixel = 0, Parent = Sidebar })
 
     local LogoArea = Create("Frame", { Size = UDim2.new(1, 0, 0, 70), BackgroundTransparency = 1, Parent = Sidebar })
-    Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), Position = UDim2.new(0, 16, 0.5, -12), BackgroundTransparency = 1, Image = GetLucideIcon("wind"), ImageColor3 = Library.Theme.Accent, Parent = LogoArea })
+    RegisterAccent(Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), Position = UDim2.new(0, 16, 0.5, -12), BackgroundTransparency = 1, Image = GetLucideIcon("wind"), ImageColor3 = Library.Theme.Accent, Parent = LogoArea }), "ImageColor3")
     Create("TextLabel", { Size = UDim2.new(1, -50, 0, 20), Position = UDim2.new(0, 48, 0.5, -10), BackgroundTransparency = 1, Text = titleText, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, Parent = LogoArea })
 
     local TabContainer = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, -140), Position = UDim2.new(0, 0, 0, 70), BackgroundTransparency = 1, ScrollBarThickness = 0, Parent = Sidebar })
@@ -422,6 +452,10 @@ function Library:CreateWindow(titleText)
     Create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = SearchBox })
 
     local searchOpen = false
+    table.insert(Library.AccentCallbacks, function(newColor)
+        if searchOpen then SearchBtn.ImageColor3 = newColor end
+    end)
+
     SearchBtn.MouseButton1Click:Connect(function()
         searchOpen = not searchOpen
         if searchOpen then
@@ -439,22 +473,20 @@ function Library:CreateWindow(titleText)
     local isVisible = true
     local isAnimating = true
     local baseSize = UDim2.new(0, 760, 0, 510)
-    
-    UIS.InputBegan:Connect(function(input, gameProcessed)
-        if gameProcessed then return end
-        if input.KeyCode == Enum.KeyCode.Insert and not isAnimating then
-            isAnimating = true
-            isVisible = not isVisible
-            if isVisible then
-                OuterFrame.Visible = true
-                TS:Create(OuterFrame, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = baseSize}):Play()
-                task.delay(0.5, function() isAnimating = false end)
-            else
-                TS:Create(OuterFrame, TweenInfo.new(0.4, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {Size = UDim2.new(0, 760, 0, 0)}):Play()
-                task.delay(0.45, function() OuterFrame.Visible = false; isAnimating = false end)
-            end
+
+    local function ToggleWindowVisibility()
+        if isAnimating then return end
+        isAnimating = true
+        isVisible = not isVisible
+        if isVisible then
+            OuterFrame.Visible = true
+            TS:Create(OuterFrame, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = baseSize}):Play()
+            task.delay(0.5, function() isAnimating = false end)
+        else
+            TS:Create(OuterFrame, TweenInfo.new(0.4, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {Size = UDim2.new(0, 760, 0, 0)}):Play()
+            task.delay(0.45, function() OuterFrame.Visible = false; isAnimating = false end)
         end
-    end)
+    end
 
     local NotifContainer = Create("Frame", { Size = UDim2.new(0, 310, 1, -20), Position = UDim2.new(1, -330, 0, 10), BackgroundTransparency = 1, Parent = sg })
     Create("UIListLayout", { Padding = UDim.new(0, 10), VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = NotifContainer })
@@ -477,11 +509,11 @@ function Library:CreateWindow(titleText)
         Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = NFrame })
         Create("UIStroke", { Color = Library.Theme.Border, Parent = NFrame })
         
-        local Icon = Create("ImageLabel", { Size = UDim2.new(0, 22, 0, 22), Position = UDim2.new(0, 15, 0, 12), BackgroundTransparency = 1, Image = GetLucideIcon("info"), ImageColor3 = Library.Theme.Accent, Parent = NFrame })
+        local Icon = RegisterAccent(Create("ImageLabel", { Size = UDim2.new(0, 22, 0, 22), Position = UDim2.new(0, 15, 0, 12), BackgroundTransparency = 1, Image = GetLucideIcon("info"), ImageColor3 = Library.Theme.Accent, Parent = NFrame }), "ImageColor3")
         Create("TextLabel", { Size = UDim2.new(1, -55, 0, 20), Position = UDim2.new(0, 48, 0, 10), BackgroundTransparency = 1, Text = title, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = NFrame })
         Create("TextLabel", { Size = UDim2.new(1, -55, 0, descHeight), Position = UDim2.new(0, 48, 0, 32), BackgroundTransparency = 1, Text = text, TextColor3 = Library.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, Parent = NFrame })
         
-        local ProgBar = Create("Frame", { Size = UDim2.new(1, -12, 0, 2), Position = UDim2.new(0, 6, 1, -4), AnchorPoint = Vector2.new(0, 1), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Parent = NFrame })
+        local ProgBar = RegisterAccent(Create("Frame", { Size = UDim2.new(1, -12, 0, 2), Position = UDim2.new(0, 6, 1, -4), AnchorPoint = Vector2.new(0, 1), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Parent = NFrame }), "BackgroundColor3")
         Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = ProgBar })
 
         TS:Create(OuterNFrame, TweenInfo.new(0.4, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = UDim2.new(0, 290, 0, targetHeight)}):Play()
@@ -661,11 +693,17 @@ function Library:CreateWindow(titleText)
 
         local TabBtn = Create("TextButton", { Size = UDim2.new(1, -20, 0, 36), BackgroundColor3 = Library.Theme.SidebarBg, Text = "", AutoButtonColor = false, LayoutOrder = WindowObj.TabCount, Parent = TabContainer })
         Create("UICorner", { CornerRadius = UDim.new(0, 6), Parent = TabBtn })
-        local AccentLine = Create("Frame", { Size = UDim2.new(0, 3, 0, 0), Position = UDim2.new(0, 0, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Parent = TabBtn })
+        local AccentLine = RegisterAccent(Create("Frame", { Size = UDim2.new(0, 3, 0, 0), Position = UDim2.new(0, 0, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Parent = TabBtn }), "BackgroundColor3")
         Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = AccentLine })
 
         local TIcon = Create("ImageLabel", { Size = UDim2.new(0, 16, 0, 16), Position = UDim2.new(0, 15, 0.5, -8), BackgroundTransparency = 1, Image = realIcon, ImageColor3 = Library.Theme.SubText, Parent = TabBtn })
         local TabText = Create("TextLabel", { Size = UDim2.new(1, -45, 1, 0), Position = UDim2.new(0, 40, 0, 0), BackgroundTransparency = 1, Text = tabName, TextColor3 = Library.Theme.SubText, Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = TabBtn })
+
+        table.insert(Library.AccentCallbacks, function(newColor)
+            if WindowObj.CurrentTab == tabName then
+                TIcon.ImageColor3 = newColor
+            end
+        end)
 
         local TabBase = Create("Frame", { Size = UDim2.new(1, 0, 1, 0), BackgroundTransparency = 1, Visible = false, Parent = ContentContainer })
         local TabContent = Create("ScrollingFrame", { Size = UDim2.new(1, 0, 1, -40), Position = UDim2.new(0, 0, 0, 40), BackgroundTransparency = 1, ScrollBarThickness = 0, Parent = TabBase })
@@ -827,6 +865,10 @@ function Library:CreateWindow(titleText)
                 local Thumb = Create("Frame", { Size = UDim2.new(0, 12, 0, 12), Position = state and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = Track })
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Thumb })
 
+                table.insert(Library.AccentCallbacks, function(newColor)
+                    if state then Track.BackgroundColor3 = newColor end
+                end)
+
                 local function setState(val)
                     state = val
                     Library.Registry[id].Value = state
@@ -959,7 +1001,7 @@ function Library:CreateWindow(titleText)
 
                 local TrackBtn = Create("Frame", { Size = UDim2.new(1, -20, 0, 4), Position = UDim2.new(0, 10, 0, 30), BackgroundColor3 = Library.Theme.ElementBg, BorderSizePixel = 0, Parent = SFrame })
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = TrackBtn })
-                local Fill = Create("Frame", { Size = UDim2.new((val - min)/(max - min), 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Parent = TrackBtn })
+                local Fill = RegisterAccent(Create("Frame", { Size = UDim2.new((val - min)/(max - min), 0, 1, 0), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, Parent = TrackBtn }), "BackgroundColor3")
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Fill })
                 local Thumb = Create("Frame", { Size = UDim2.new(0, 12, 0, 12), Position = UDim2.new(1, -6, 0.5, -6), BackgroundColor3 = Color3.fromRGB(255, 255, 255), BorderSizePixel = 0, Parent = Fill })
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = Thumb })
@@ -1007,7 +1049,7 @@ function Library:CreateWindow(titleText)
                 local KFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1, Parent = ElementContainer })
                 Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = KFrame })
                 
-                local BindBtn = Create("TextButton", { Size = UDim2.new(0, 60, 0, 20), Position = UDim2.new(1, -70, 0.5, -10), BackgroundColor3 = Library.Theme.ElementBg, Text = defaultName, TextColor3 = Library.Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 11, AutoButtonColor = false, Parent = KFrame })
+                local BindBtn = RegisterAccent(Create("TextButton", { Size = UDim2.new(0, 60, 0, 20), Position = UDim2.new(1, -70, 0.5, -10), BackgroundColor3 = Library.Theme.ElementBg, Text = defaultName, TextColor3 = Library.Theme.Accent, Font = Enum.Font.GothamBold, TextSize = 11, AutoButtonColor = false, Parent = KFrame }), "TextColor3")
                 Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = BindBtn })
                 Create("UIStroke", { Color = Library.Theme.Border, Parent = BindBtn })
 
@@ -1109,6 +1151,16 @@ function Library:CreateWindow(titleText)
         else
             FadeUI(WMOuter, false, 0.3)
             task.delay(0.3, function() if not isWMVisible then WMOuter.Visible = false end end)
+        end
+    end)
+
+    VisualsSec:CreateColorPicker("UI Accent Color", Library.Theme.Accent, function(color)
+        UpdateAccent(color)
+    end)
+
+    VisualsSec:CreateKeybind("UI Toggle Keybind", Enum.KeyCode.Insert, function(key, isPressed)
+        if isPressed then
+            ToggleWindowVisibility()
         end
     end)
 
