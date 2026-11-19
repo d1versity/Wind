@@ -358,39 +358,25 @@ function Library:CreateWindow(titleText)
         Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = line })
     end
 
-    -- 0: Wind Logo
     local WMIcon = RegisterAccent(Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundTransparency = 1, Image = GetLucideIcon("wind"), ImageColor3 = Library.Theme.Accent, LayoutOrder = 0, Parent = WMInner }), "ImageColor3")
-    
-    -- 1: Accent Line
     AddWMLine(1)
 
-    -- 2: Avatar
     local WMAvatar = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", LayoutOrder = 2, Parent = WMInner })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WMAvatar })
 
-    -- 3: Display Name
     local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = 3, Parent = WMInner })
-    
-    -- 4: Accent Line
     AddWMLine(4)
     
-    -- 5: Time
     local WMTime = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = "00:00:00", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 5, Parent = WMInner })
-    
-    -- 6: Accent Line
     AddWMLine(6)
     
-    -- 7: FPS
     local currentFPS = 0
     local WMFPS = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, RichText = true, Text = "0 <font color='#"..Library.Theme.Accent:ToHex().."'>FPS</font>", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 7, Parent = WMInner })
     table.insert(Library.AccentCallbacks, function(newColor)
         WMFPS.Text = currentFPS .. " <font color='#"..newColor:ToHex().."'>FPS</font>"
     end)
-    
-    -- 8: Accent Line
     AddWMLine(8)
     
-    -- 9: Game Name
     local gameName = "Roblox"
     if game.PlaceId > 0 then
         task.spawn(function()
@@ -533,6 +519,286 @@ function Library:CreateWindow(titleText)
             TS:Create(OuterNFrame, TweenInfo.new(0.4, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {Size = UDim2.new(0, 290, 0, 0)}):Play()
             task.delay(0.4, function() OuterNFrame:Destroy() end)
         end)
+    end
+
+    -- ========================================== --
+    --          MODULAR MINI WINDOW API           --
+    -- ========================================== --
+    function WindowObj:CreateMiniWindow(config)
+        config = config or {}
+        local width = config.Width or 240
+        local pos = config.Position or UDim2.new(0, 50, 0, 120)
+        local winTitle = config.Title or "Mini Window"
+        local startVisible = config.Visible == true
+
+        local MiniOuter = Create("Frame", {
+            Size = UDim2.new(0, width, 0, 0),
+            Position = pos,
+            BackgroundColor3 = Library.Theme.OuterBorder,
+            BackgroundTransparency = 0.4,
+            BorderSizePixel = 0,
+            AutomaticSize = Enum.AutomaticSize.Y,
+            Visible = startVisible,
+            Parent = sg
+        })
+        Create("UICorner", { CornerRadius = UDim.new(0, 10), Parent = MiniOuter })
+        Create("UIPadding", { PaddingTop = UDim.new(0, 5), PaddingBottom = UDim.new(0, 5), PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5), Parent = MiniOuter })
+        MakeSmoothDraggable(MiniOuter, MiniOuter)
+
+        local MiniInner = Create("Frame", {
+            Size = UDim2.new(1, 0, 0, 0),
+            BackgroundColor3 = Library.Theme.MainBg,
+            BorderSizePixel = 0,
+            AutomaticSize = Enum.AutomaticSize.Y,
+            Parent = MiniOuter
+        })
+        Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = MiniInner })
+        Create("UIStroke", { Color = Library.Theme.Border, Thickness = 1, Parent = MiniInner })
+
+        local InnerLayout = Create("UIListLayout", {
+            FillDirection = Enum.FillDirection.Vertical,
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Parent = MiniInner
+        })
+
+        -- Header (Left Accent Line + Wind Logo, Centered Title)
+        local Header = Create("Frame", {
+            Size = UDim2.new(1, 0, 0, 32),
+            BackgroundTransparency = 1,
+            LayoutOrder = 0,
+            Parent = MiniInner
+        })
+
+        local HeaderLine = RegisterAccent(Create("Frame", {
+            Size = UDim2.new(0, 2, 0, 14),
+            Position = UDim2.new(0, 10, 0.5, -7),
+            BackgroundColor3 = Library.Theme.Accent,
+            BorderSizePixel = 0,
+            Parent = Header
+        }), "BackgroundColor3")
+        Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = HeaderLine })
+
+        RegisterAccent(Create("ImageLabel", {
+            Size = UDim2.new(0, 16, 0, 16),
+            Position = UDim2.new(0, 18, 0.5, -8),
+            BackgroundTransparency = 1,
+            Image = GetLucideIcon("wind"),
+            ImageColor3 = Library.Theme.Accent,
+            Parent = Header
+        }), "ImageColor3")
+
+        local HeaderTitle = Create("TextLabel", {
+            Size = UDim2.new(1, -80, 1, 0),
+            Position = UDim2.new(0.5, 0, 0, 0),
+            AnchorPoint = Vector2.new(0.5, 0),
+            BackgroundTransparency = 1,
+            Text = winTitle,
+            TextColor3 = Library.Theme.Text,
+            Font = Enum.Font.GothamBold,
+            TextSize = 12,
+            TextXAlignment = Enum.TextXAlignment.Center,
+            TextTruncate = Enum.TextTruncate.AtEnd,
+            Parent = Header
+        })
+
+        Create("Frame", {
+            Size = UDim2.new(1, 0, 0, 1),
+            Position = UDim2.new(0, 0, 1, -1),
+            BackgroundColor3 = Library.Theme.Border,
+            BorderSizePixel = 0,
+            Parent = Header
+        })
+
+        -- Content Body
+        local Body = Create("Frame", {
+            Size = UDim2.new(1, 0, 0, 0),
+            BackgroundTransparency = 1,
+            AutomaticSize = Enum.AutomaticSize.Y,
+            LayoutOrder = 1,
+            Parent = MiniInner
+        })
+        Create("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = Body })
+        Create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = Body })
+
+        local function AttachBuilders(targetObj, parentFrame, isHorizontal)
+            local itemOrder = 0
+            local function nextOrder()
+                itemOrder = itemOrder + 1
+                return itemOrder
+            end
+
+            function targetObj:AddImage(image, size, isCircle)
+                size = size or 24
+                local img = Create("ImageLabel", {
+                    Size = UDim2.new(0, size, 0, size),
+                    BackgroundColor3 = Library.Theme.ElementBg,
+                    BackgroundTransparency = isCircle and 0 or 1,
+                    Image = GetLucideIcon(image),
+                    LayoutOrder = nextOrder(),
+                    Parent = parentFrame
+                })
+                if isCircle then Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = img }) end
+                return {
+                    Object = img,
+                    Set = function(_, newImg) img.Image = GetLucideIcon(newImg) end,
+                    SetColor = function(_, col) img.ImageColor3 = col end
+                }
+            end
+
+            function targetObj:AddText(text, opts)
+                opts = opts or {}
+                local lbl = Create("TextLabel", {
+                    Size = isHorizontal and UDim2.new(0, 0, 0, 18) or UDim2.new(1, 0, 0, 0),
+                    AutomaticSize = isHorizontal and Enum.AutomaticSize.X or Enum.AutomaticSize.Y,
+                    BackgroundTransparency = 1,
+                    Text = tostring(text or ""),
+                    TextColor3 = opts.Color or (opts.SubText and Library.Theme.SubText or Library.Theme.Text),
+                    Font = opts.Bold and Enum.Font.GothamBold or Enum.Font.Gotham,
+                    TextSize = opts.Size or 12,
+                    TextXAlignment = opts.Align or Enum.TextXAlignment.Left,
+                    TextWrapped = not isHorizontal,
+                    RichText = opts.RichText ~= false,
+                    LayoutOrder = nextOrder(),
+                    Parent = parentFrame
+                })
+                return {
+                    Object = lbl,
+                    Set = function(_, newText) lbl.Text = tostring(newText or "") end,
+                    SetColor = function(_, col) lbl.TextColor3 = col end
+                }
+            end
+
+            function targetObj:AddDivider(isVertical)
+                local vertical = (isVertical ~= nil) and isVertical or isHorizontal
+                local div = RegisterAccent(Create("Frame", {
+                    Size = vertical and UDim2.new(0, 2, 0, 14) or UDim2.new(1, 0, 0, 1),
+                    BackgroundColor3 = Library.Theme.Accent,
+                    BorderSizePixel = 0,
+                    LayoutOrder = nextOrder(),
+                    Parent = parentFrame
+                }), "BackgroundColor3")
+                Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = div })
+                return { Object = div }
+            end
+
+            function targetObj:AddButton(text, callback)
+                local btn = Create("TextButton", {
+                    Size = isHorizontal and UDim2.new(0, 0, 0, 24) or UDim2.new(1, 0, 0, 26),
+                    AutomaticSize = isHorizontal and Enum.AutomaticSize.X or Enum.AutomaticSize.None,
+                    BackgroundColor3 = Library.Theme.ElementBg,
+                    Text = text,
+                    TextColor3 = Library.Theme.Text,
+                    Font = Enum.Font.GothamBold,
+                    TextSize = 11,
+                    AutoButtonColor = false,
+                    LayoutOrder = nextOrder(),
+                    Parent = parentFrame
+                })
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = btn })
+                Create("UIStroke", { Color = Library.Theme.Border, Parent = btn })
+                if isHorizontal then
+                    Create("UIPadding", { PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = btn })
+                end
+
+                btn.MouseButton1Click:Connect(function()
+                    TS:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Library.Theme.Hover}):Play()
+                    task.wait(0.1)
+                    TS:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Library.Theme.ElementBg}):Play()
+                    if callback then callback() end
+                end)
+
+                return {
+                    Object = btn,
+                    Set = function(_, newText) btn.Text = newText end
+                }
+            end
+
+            function targetObj:AddProgressBar(initialPercent)
+                local pct = math.clamp(initialPercent or 0, 0, 1)
+                local track = Create("Frame", {
+                    Size = isHorizontal and UDim2.new(0, 80, 0, 6) or UDim2.new(1, 0, 0, 6),
+                    BackgroundColor3 = Library.Theme.ElementBg,
+                    BorderSizePixel = 0,
+                    LayoutOrder = nextOrder(),
+                    Parent = parentFrame
+                })
+                Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = track })
+
+                local fill = RegisterAccent(Create("Frame", {
+                    Size = UDim2.new(pct, 0, 1, 0),
+                    BackgroundColor3 = Library.Theme.Accent,
+                    BorderSizePixel = 0,
+                    Parent = track
+                }), "BackgroundColor3")
+                Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = fill })
+
+                return {
+                    Object = track,
+                    Set = function(_, newPct)
+                        local c = math.clamp(newPct or 0, 0, 1)
+                        TS:Create(fill, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(c, 0, 1, 0)}):Play()
+                    end
+                }
+            end
+
+            function targetObj:Clear()
+                for _, child in ipairs(parentFrame:GetChildren()) do
+                    if not child:IsA("UIListLayout") and not child:IsA("UIPadding") and not child:IsA("UICorner") and not child:IsA("UIStroke") then
+                        child:Destroy()
+                    end
+                end
+                itemOrder = 0
+            end
+        end
+
+        local MiniObj = { Frame = MiniOuter, IsVisible = startVisible }
+        AttachBuilders(MiniObj, Body, false)
+
+        function MiniObj:AddRow(padding)
+            local rowFrame = Create("Frame", {
+                Size = UDim2.new(1, 0, 0, 0),
+                BackgroundTransparency = 1,
+                AutomaticSize = Enum.AutomaticSize.Y,
+                LayoutOrder = #Body:GetChildren(),
+                Parent = Body
+            })
+            Create("UIListLayout", {
+                FillDirection = Enum.FillDirection.Horizontal,
+                VerticalAlignment = Enum.VerticalAlignment.Center,
+                Padding = UDim.new(0, padding or 8),
+                SortOrder = Enum.SortOrder.LayoutOrder,
+                Parent = rowFrame
+            })
+
+            local RowObj = { Frame = rowFrame }
+            AttachBuilders(RowObj, rowFrame, true)
+            function RowObj:Destroy() rowFrame:Destroy() end
+            return RowObj
+        end
+
+        function MiniObj:SetTitle(newTitle)
+            HeaderTitle.Text = tostring(newTitle or "")
+        end
+
+        function MiniObj:SetVisible(state)
+            MiniObj.IsVisible = state
+            if state then
+                MiniOuter.Visible = true
+                FadeUI(MiniOuter, false, 0)
+                FadeUI(MiniOuter, true, 0.25)
+            else
+                FadeUI(MiniOuter, false, 0.25)
+                task.delay(0.25, function()
+                    if not MiniObj.IsVisible then MiniOuter.Visible = false end
+                end)
+            end
+        end
+
+        function MiniObj:Destroy()
+            MiniOuter:Destroy()
+        end
+
+        return MiniObj
     end
 
     local CPBg = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Visible = false, ZIndex = 50, Parent = MainFrame })
@@ -1078,7 +1344,6 @@ function Library:CreateWindow(titleText)
                     end
                     currentKey = parsedKey
                     
-                    -- Sends 'false' because the key is being assigned, not pressed
                     callback(currentKey, false)
                 end
                 Library.Registry[id].Set = setKey
@@ -1122,7 +1387,6 @@ function Library:CreateWindow(titleText)
                     
                     if not gp and currentKey ~= nil and not listening then
                         if input.KeyCode == currentKey or input.UserInputType == currentKey then
-                            -- Sends 'true' because the key is physically pressed in-game
                             callback(currentKey, true)
                         end
                     end
