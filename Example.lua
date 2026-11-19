@@ -1,6 +1,7 @@
 -- Replace the string below with the raw URL to your uploaded UI Library.
 -- Note: Wind UI automatically prevents double execution if the script is already running.
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/d1versity/Wind/refs/heads/main/Library.lua"))()
+local LocalPlayer = game:GetService("Players").LocalPlayer
 
 -- Create Window
 local Window = Library:CreateWindow("Wind UI")
@@ -64,7 +65,34 @@ MiscMain:CreateInput("Custom Tag", "Type something...", function(text)
     print("Input submitted:", text)
 end)
 
--- On Startup Notification 
-task.delay(1.5, function()
-    Window:Notify("Success", "Welcome to Wind UI v2.0. Library loaded successfully.", 7)
+-- ========================================== --
+--         MODULAR MINI WINDOW DEMO           --
+-- ========================================== --
+local StatusWin = Window:CreateMiniWindow({
+    Title = "Player Status",
+    Width = 250,
+    Position = UDim2.new(0, 50, 0, 120),
+    Visible = false
+})
+
+local TopRow = StatusWin:AddRow(8)
+local PlayerAvatar = TopRow:AddImage("rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150", 28, true)
+local PlayerName = TopRow:AddText(LocalPlayer.DisplayName, { Bold = true })
+TopRow:AddDivider(true)
+local PlayerState = TopRow:AddText("Active", { SubText = true })
+
+StatusWin:AddDivider(false)
+local HealthBar = StatusWin:AddProgressBar(0.85)
+StatusWin:AddButton("Randomize Progress", function()
+    local newVal = math.random(10, 100) / 100
+    HealthBar:Set(newVal)
+    PlayerState:Set(math.floor(newVal * 100) .. "%")
 end)
+
+local MiscHudSec = MiscTab:CreateSection("Mini Windows", "Right")
+MiscHudSec:CreateToggle("Show Player Status HUD", false, function(state)
+    StatusWin:SetVisible(state)
+end)
+
+-- Startup Notification (automatically queued until the cinematic intro finishes)
+Window:Notify("Success", "Welcome to Wind UI v2.7. Library loaded successfully.", 7)
