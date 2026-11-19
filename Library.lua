@@ -1,4 +1,4 @@
--- Wind by d1versity / Ege | v2.7
+-- Wind by d1versity / Ege | v2.6
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -41,6 +41,11 @@ local function Create(className, properties)
     local inst = Instance.new(className)
     for k, v in pairs(properties) do inst[k] = v end
     return inst
+end
+
+local function TrackConn(conn)
+    table.insert(Library.Connections, conn)
+    return conn
 end
 
 local function RegisterAccent(obj, prop)
@@ -117,25 +122,24 @@ local function MakeSmoothDraggable(dragHandle, frameToMove)
     dragHandle.InputChanged:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseMovement then dragInput = input end
     end)
-    UIS.InputChanged:Connect(function(input)
+    TrackConn(UIS.InputChanged:Connect(function(input)
         if input == dragInput and dragging and Library.AllowDrag then
             local delta = input.Position - dragStart
             targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-    end)
-    UIS.InputEnded:Connect(function(input)
+    end))
+    TrackConn(UIS.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-    end)
+    end))
 
-    local lerpConn = RS.RenderStepped:Connect(function(dt)
+    TrackConn(RS.RenderStepped:Connect(function(dt)
         if frameToMove.Parent and Library.AllowDrag then
             local currentPos = frameToMove.Position
             if currentPos ~= targetPos then
                 frameToMove.Position = currentPos:Lerp(targetPos, math.clamp(dt * 15, 0, 1))
             end
         end
-    end)
-    table.insert(Library.Connections, lerpConn)
+    end))
 end
 
 local function FadeUI(element, isVisible, duration)
@@ -259,19 +263,15 @@ local function PlayIntro(parentGui, onComplete)
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WipeLine })
 
     task.spawn(function()
-        -- 1. Fade screen to pitch black
         TS:Create(IntroOverlay, TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
         task.wait(0.9)
 
-        -- 2. Fade in Wind icon at the center
         TS:Create(IntroIcon, TweenInfo.new(0.6, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {ImageTransparency = 0}):Play()
         task.wait(0.75)
 
-        -- 3. Smoothly slide icon slightly to the left
         TS:Create(IntroIcon, TweenInfo.new(0.75, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0, 72, 0.5, 0)}):Play()
         task.wait(0.3)
 
-        -- 4. Fade in title and subtitle to the right of the icon
         TS:Create(TitleLabel, TweenInfo.new(0.65, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
             TextTransparency = 0,
             Position = UDim2.new(0, 112, 0.5, -12)
@@ -283,31 +283,139 @@ local function PlayIntro(parentGui, onComplete)
         }):Play()
         task.wait(1.2)
 
-        -- 5. Animate rounded blue line growing from bottom to top
         TS:Create(WipeLine, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = UDim2.new(0, 4, 0, 84)}):Play()
         task.wait(0.55)
 
-        -- 6. Sweep line across from right to left, wiping out the text and icon smoothly
         local wipeInfo = TweenInfo.new(0.9, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut)
         TS:Create(WipeLine, wipeInfo, {Position = UDim2.new(0.5, -170, 0.5, 42)}):Play()
         TS:Create(ClipContainer, wipeInfo, {Size = UDim2.new(0, 0, 0, 100)}):Play()
         task.wait(1.0)
 
-        -- 7. Shrink line smoothly from top to bottom
+        TS:Create(WipeLine, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {Size = UDim2.new(0, 4, 0, 0)}):Play()
+        task.wait(0.55)
+
+        task.wait(0.5)
+
+        TS:Create(IntroOverlay, TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
+        task.wait(0.85)
+        IntroOverlay:Destroy()
+
+        task.wait(0.15)
+        if onComplete then onComplete() end
+    end)
+end
+
+local function PlayOutro(accentColor, onMidpointUnload)
+    local OutroGui = Create("ScreenGui", {
+        Name = "Wind_Outro",
+        ResetOnSpawn = false,
+        IgnoreGuiInset = true,
+        DisplayOrder = 9999,
+        Parent = (gethui and gethui()) or game:GetService("CoreGui")
+    })
+
+    local OutroOverlay = Create("Frame", {
+        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BackgroundTransparency = 1,
+        BorderSizePixel = 0,
+        ZIndex = 1000,
+        Parent = OutroGui
+    })
+
+    local ClipContainer = Create("Frame", {
+        Size = UDim2.new(0, 380, 0, 100),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Position = UDim2.new(0.5, -190, 0.5, 0),
+        BackgroundTransparency = 1,
+        ClipsDescendants = true,
+        ZIndex = 1001,
+        Parent = OutroOverlay
+    })
+
+    local OutroIcon = Create("ImageLabel", {
+        Size = UDim2.new(0, 50, 0, 50),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Position = UDim2.new(0, 190, 0.5, 0),
+        BackgroundTransparency = 1,
+        Image = GetLucideIcon("wind"),
+        ImageColor3 = accentColor,
+        ImageTransparency = 1,
+        ZIndex = 1002,
+        Parent = ClipContainer
+    })
+
+    local ByeLabel = Create("TextLabel", {
+        Size = UDim2.new(0, 270, 0, 40),
+        AnchorPoint = Vector2.new(0, 0.5),
+        Position = UDim2.new(0, 108, 0.5, 0),
+        BackgroundTransparency = 1,
+        Text = "See you next time.",
+        TextColor3 = Library.Theme.Text,
+        Font = Enum.Font.GothamBlack,
+        TextSize = 27,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        TextTransparency = 1,
+        ZIndex = 1002,
+        Parent = ClipContainer
+    })
+
+    local WipeLine = Create("Frame", {
+        Size = UDim2.new(0, 4, 0, 0),
+        AnchorPoint = Vector2.new(0.5, 1),
+        Position = UDim2.new(0.5, 190, 0.5, 42),
+        BackgroundColor3 = accentColor,
+        BorderSizePixel = 0,
+        ZIndex = 1003,
+        Parent = OutroOverlay
+    })
+    Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WipeLine })
+
+    task.spawn(function()
+        -- 1. Fade screen to pitch black
+        TS:Create(OutroOverlay, TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
+        task.wait(0.9)
+
+        -- 2. Completely unload UI and user script hooks while screen is pitch black
+        if onMidpointUnload then pcall(onMidpointUnload) end
+
+        -- 3. Fade in Wind icon at the center
+        TS:Create(OutroIcon, TweenInfo.new(0.6, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {ImageTransparency = 0}):Play()
+        task.wait(0.75)
+
+        -- 4. Slide icon slightly to the left
+        TS:Create(OutroIcon, TweenInfo.new(0.75, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0, 58, 0.5, 0)}):Play()
+        task.wait(0.3)
+
+        -- 5. Fade in "See you next time." (no subtitle)
+        TS:Create(ByeLabel, TweenInfo.new(0.65, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+            TextTransparency = 0,
+            Position = UDim2.new(0, 98, 0.5, 0)
+        }):Play()
+        task.wait(1.2)
+
+        -- 6. Animate rounded accent line growing from bottom to top
+        TS:Create(WipeLine, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = UDim2.new(0, 4, 0, 84)}):Play()
+        task.wait(0.55)
+
+        -- 7. Sweep line across from right to left, wiping out the text and icon smoothly
+        local wipeInfo = TweenInfo.new(0.9, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut)
+        TS:Create(WipeLine, wipeInfo, {Position = UDim2.new(0.5, -190, 0.5, 42)}):Play()
+        TS:Create(ClipContainer, wipeInfo, {Size = UDim2.new(0, 0, 0, 100)}):Play()
+        task.wait(1.0)
+
+        -- 8. Shrink line smoothly from top to bottom
         TS:Create(WipeLine, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {Size = UDim2.new(0, 4, 0, 0)}):Play()
         task.wait(0.55)
 
         -- Pause on the black screen before fading out
         task.wait(0.5)
 
-        -- 8. Fade out black overlay completely
-        TS:Create(IntroOverlay, TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
+        -- 9. Fade out black overlay and destroy outro container
+        TS:Create(OutroOverlay, TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
         task.wait(0.85)
-        IntroOverlay:Destroy()
-
-        -- 9. Brief pause after fade out, then launch main window
-        task.wait(0.15)
-        if onComplete then onComplete() end
+        OutroGui:Destroy()
     end)
 end
 
@@ -351,20 +459,20 @@ function Library:CreateWindow(titleText)
     Create("UIStroke", { Color = Library.Theme.Border, Thickness = 1, Parent = WMInner })
     Create("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12), Parent = WMInner })
     
-    local WMLayout = Create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = WMInner })
+    Create("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, Padding = UDim.new(0, 12), SortOrder = Enum.SortOrder.LayoutOrder, Parent = WMInner })
 
     local function AddWMLine(order)
         local line = RegisterAccent(Create("Frame", { Size = UDim2.new(0, 2, 0, 16), BackgroundColor3 = Library.Theme.Accent, BorderSizePixel = 0, LayoutOrder = order, Parent = WMInner }), "BackgroundColor3")
         Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = line })
     end
 
-    local WMIcon = RegisterAccent(Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundTransparency = 1, Image = GetLucideIcon("wind"), ImageColor3 = Library.Theme.Accent, LayoutOrder = 0, Parent = WMInner }), "ImageColor3")
+    RegisterAccent(Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundTransparency = 1, Image = GetLucideIcon("wind"), ImageColor3 = Library.Theme.Accent, LayoutOrder = 0, Parent = WMInner }), "ImageColor3")
     AddWMLine(1)
 
     local WMAvatar = Create("ImageLabel", { Size = UDim2.new(0, 24, 0, 24), BackgroundColor3 = Library.Theme.ElementBg, Image = "rbxthumb://type=AvatarHeadShot&id="..LocalPlayer.UserId.."&w=150&h=150", LayoutOrder = 2, Parent = WMInner })
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WMAvatar })
 
-    local WMName = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = 3, Parent = WMInner })
+    Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = LocalPlayer.DisplayName, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, LayoutOrder = 3, Parent = WMInner })
     AddWMLine(4)
     
     local WMTime = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = "00:00:00", TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 5, Parent = WMInner })
@@ -389,7 +497,7 @@ function Library:CreateWindow(titleText)
     local WMGame = Create("TextLabel", { AutomaticSize = Enum.AutomaticSize.X, Size = UDim2.new(0, 0, 1, 0), BackgroundTransparency = 1, Text = gameName, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 13, LayoutOrder = 9, Parent = WMInner })
 
     local lastTick, frames = tick(), 0
-    RS.RenderStepped:Connect(function()
+    TrackConn(RS.RenderStepped:Connect(function()
         frames = frames + 1
         if tick() - lastTick >= 1 then
             currentFPS = frames
@@ -399,7 +507,7 @@ function Library:CreateWindow(titleText)
         end
         WMTime.Text = os.date("%H:%M:%S")
         WMGame.Text = gameName
-    end)
+    end))
 
     WMOuter.Visible = true
     FadeUI(WMOuter, false, 0)
@@ -483,10 +591,92 @@ function Library:CreateWindow(titleText)
     local NotifContainer = Create("Frame", { Size = UDim2.new(0, 310, 1, -20), Position = UDim2.new(1, -330, 0, 10), BackgroundTransparency = 1, Parent = sg })
     Create("UIListLayout", { Padding = UDim.new(0, 10), VerticalAlignment = Enum.VerticalAlignment.Bottom, HorizontalAlignment = Enum.HorizontalAlignment.Right, Parent = NotifContainer })
 
-    local WindowObj = { CurrentTab = nil, Tabs = {}, TabCount = 0, IsLoadingConfig = false, IntroFinished = false, QueuedNotifs = {} }
+    local WindowObj = {
+        CurrentTab = nil,
+        Tabs = {},
+        TabCount = 0,
+        IsLoadingConfig = false,
+        IntroFinished = false,
+        Unloaded = false,
+        QueuedNotifs = {},
+        UnloadCallbacks = {},
+        TrackedInstances = {},
+        KeybindEntries = {}
+    }
+
+    function WindowObj:OnUnload(callback)
+        if type(callback) == "function" then
+            table.insert(WindowObj.UnloadCallbacks, callback)
+        end
+    end
+
+    function WindowObj:TrackConnection(conn)
+        return TrackConn(conn)
+    end
+
+    function WindowObj:TrackInstance(inst)
+        table.insert(WindowObj.TrackedInstances, inst)
+        return inst
+    end
+
+    local isUnloading = false
+    function WindowObj:Unload()
+        if isUnloading or WindowObj.Unloaded then return end
+        isUnloading = true
+        isAnimating = true
+
+        local currentAccent = Library.Theme.Accent
+        PlayOutro(currentAccent, function()
+            WindowObj.Unloaded = true
+
+            -- 1. Disconnect all UI and user-tracked connections
+            for _, conn in ipairs(Library.Connections) do
+                pcall(function() conn:Disconnect() end)
+            end
+            table.clear(Library.Connections)
+
+            -- 2. Turn off all active toggles cleanly
+            WindowObj.IsLoadingConfig = true
+            for _, entry in pairs(Library.Registry) do
+                if entry.Type == "Toggle" and entry.Value == true and entry.Set then
+                    pcall(entry.Set, false)
+                end
+            end
+
+            -- 3. Execute all user OnUnload cleanup callbacks
+            for _, cb in ipairs(WindowObj.UnloadCallbacks) do
+                pcall(cb)
+            end
+            table.clear(WindowObj.UnloadCallbacks)
+
+            -- 4. Destroy all user-tracked instances (ESP, Highlights, Parts, etc.)
+            for _, inst in ipairs(WindowObj.TrackedInstances) do
+                pcall(function()
+                    if typeof(inst) == "Instance" then
+                        inst:Destroy()
+                    elseif type(inst) == "table" and inst.Remove then
+                        inst:Remove()
+                    elseif type(inst) == "table" and inst.Destroy then
+                        inst:Destroy()
+                    end
+                end)
+            end
+            table.clear(WindowObj.TrackedInstances)
+
+            -- 5. Clear registries and destroy main ScreenGui
+            table.clear(Library.Registry)
+            table.clear(Library.AccentObjects)
+            table.clear(Library.AccentCallbacks)
+            getgenv().WindUI_Active = nil
+
+            if sg and sg.Parent then
+                sg:Destroy()
+            end
+        end)
+    end
     
     function WindowObj:Notify(title, text, duration)
-        if WindowObj.IsLoadingConfig then return end
+        if WindowObj.IsLoadingConfig or WindowObj.Unloaded then return end
         if not WindowObj.IntroFinished then
             table.insert(WindowObj.QueuedNotifs, {title, text, duration})
             return
@@ -505,7 +695,7 @@ function Library:CreateWindow(titleText)
         Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = NFrame })
         Create("UIStroke", { Color = Library.Theme.Border, Parent = NFrame })
         
-        local Icon = RegisterAccent(Create("ImageLabel", { Size = UDim2.new(0, 22, 0, 22), Position = UDim2.new(0, 15, 0, 12), BackgroundTransparency = 1, Image = GetLucideIcon("info"), ImageColor3 = Library.Theme.Accent, Parent = NFrame }), "ImageColor3")
+        RegisterAccent(Create("ImageLabel", { Size = UDim2.new(0, 22, 0, 22), Position = UDim2.new(0, 15, 0, 12), BackgroundTransparency = 1, Image = GetLucideIcon("info"), ImageColor3 = Library.Theme.Accent, Parent = NFrame }), "ImageColor3")
         Create("TextLabel", { Size = UDim2.new(1, -55, 0, 20), Position = UDim2.new(0, 48, 0, 10), BackgroundTransparency = 1, Text = title, TextColor3 = Library.Theme.Text, Font = Enum.Font.GothamBold, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = NFrame })
         Create("TextLabel", { Size = UDim2.new(1, -55, 0, descHeight), Position = UDim2.new(0, 48, 0, 32), BackgroundTransparency = 1, Text = text, TextColor3 = Library.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, Parent = NFrame })
         
@@ -516,8 +706,10 @@ function Library:CreateWindow(titleText)
         TS:Create(ProgBar, TweenInfo.new(duration, Enum.EasingStyle.Linear), {Size = UDim2.new(0, 0, 0, 2)}):Play()
         
         task.delay(duration, function()
-            TS:Create(OuterNFrame, TweenInfo.new(0.4, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {Size = UDim2.new(0, 290, 0, 0)}):Play()
-            task.delay(0.4, function() OuterNFrame:Destroy() end)
+            if OuterNFrame and OuterNFrame.Parent then
+                TS:Create(OuterNFrame, TweenInfo.new(0.4, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {Size = UDim2.new(0, 290, 0, 0)}):Play()
+                task.delay(0.4, function() if OuterNFrame and OuterNFrame.Parent then OuterNFrame:Destroy() end end)
+            end
         end)
     end
 
@@ -555,7 +747,7 @@ function Library:CreateWindow(titleText)
         Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = MiniInner })
         Create("UIStroke", { Color = Library.Theme.Border, Thickness = 1, Parent = MiniInner })
 
-        local InnerLayout = Create("UIListLayout", {
+        Create("UIListLayout", {
             FillDirection = Enum.FillDirection.Vertical,
             SortOrder = Enum.SortOrder.LayoutOrder,
             Parent = MiniInner
@@ -797,6 +989,39 @@ function Library:CreateWindow(titleText)
         return MiniObj
     end
 
+    -- [ BUILT-IN KEYBIND LIST MINI WINDOW ]
+    local KeybindListWin = WindowObj:CreateMiniWindow({
+        Title = "Keybinds",
+        Width = 220,
+        Position = UDim2.new(0, 50, 0, 110),
+        Visible = false
+    })
+
+    local function RefreshKeybindList()
+        KeybindListWin:Clear()
+        local hasAny = false
+        for _, kb in ipairs(WindowObj.KeybindEntries) do
+            if kb.Key ~= "None" and kb.Name ~= "UI Toggle Keybind" then
+                hasAny = true
+                local row = Create("Frame", {
+                    Size = UDim2.new(1, 0, 0, 20),
+                    BackgroundTransparency = 1,
+                    Parent = KeybindListWin.Frame:FindFirstChildWhichIsA("Frame"):FindFirstChild("Frame", true) or KeybindListWin.Frame
+                })
+                -- Use MiniWindow's built-in AddText with RichText for clean left/right alignment
+                row:Destroy()
+                local r = KeybindListWin:AddRow(4)
+                r:AddText(kb.Name, { Size = 11 })
+                r:AddText("[" .. kb.Key .. "]", { Bold = true, Size = 11, Color = Library.Theme.Accent })
+            end
+        end
+        if not hasAny then
+            KeybindListWin:AddText("No active keybinds.", { SubText = true, Size = 11, Align = Enum.TextXAlignment.Center })
+        end
+    end
+    table.insert(Library.AccentCallbacks, RefreshKeybindList)
+    RefreshKeybindList()
+
     local CPBg = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Visible = false, ZIndex = 50, Parent = MainFrame })
     local CPWindow = Create("Frame", { Size = UDim2.new(0, 240, 0, 350), Position = UDim2.new(0.5, -120, 0.5, -175), BackgroundColor3 = Library.Theme.MainBg, ZIndex = 51, Parent = CPBg })
     Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = CPWindow })
@@ -873,9 +1098,9 @@ function Library:CreateWindow(titleText)
     local draggingSV, draggingHue = false, false
     SVMap.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then draggingSV = true end end)
     HueSlider.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then draggingHue = true end end)
-    UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then draggingSV = false; draggingHue = false end end)
+    TrackConn(UIS.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then draggingSV = false; draggingHue = false end end))
     
-    UIS.InputChanged:Connect(function(i)
+    TrackConn(UIS.InputChanged:Connect(function(i)
         if i.UserInputType == Enum.UserInputType.MouseMovement then
             if draggingSV then
                 CPState.S = math.clamp((i.Position.X - SVMap.AbsolutePosition.X) / SVMap.AbsoluteSize.X, 0, 1)
@@ -886,7 +1111,7 @@ function Library:CreateWindow(titleText)
                 UpdateCPVisuals()
             end
         end
-    end)
+    end))
 
     local function UpdateFromRGB()
         local r, g, b = tonumber(RBox.Text) or 255, tonumber(GBox.Text) or 255, tonumber(BBox.Text) or 255
@@ -1144,8 +1369,10 @@ function Library:CreateWindow(titleText)
                 local function setState(val)
                     state = val
                     Library.Registry[id].Value = state
-                    TS:Create(Track, TweenInfo.new(0.2), {BackgroundColor3 = state and Library.Theme.Accent or Library.Theme.ElementBg}):Play()
-                    TS:Create(Thumb, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
+                    if Track and Track.Parent then
+                        TS:Create(Track, TweenInfo.new(0.2), {BackgroundColor3 = state and Library.Theme.Accent or Library.Theme.ElementBg}):Play()
+                        TS:Create(Thumb, TweenInfo.new(0.2), {Position = state and UDim2.new(1, -14, 0.5, -6) or UDim2.new(0, 2, 0.5, -6)}):Play()
+                    end
                     callback(state)
                 end
                 Library.Registry[id].Set = setState
@@ -1166,13 +1393,13 @@ function Library:CreateWindow(titleText)
                 Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = DropBtn })
                 Create("UIStroke", { Color = Library.Theme.Border, Parent = DropBtn })
 
-                local SelectedText = Create("TextLabel", { Size = UDim2.new(1, -30, 1, 0), Position = UDim2.new(0, 8, 0, 0), BackgroundTransparency = 1, Text = default, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = DropBtn })
+                local SelectedText = Create("TextLabel", { Size = UDim2.new(1, -30, 1, 0), Position = UDim2.new(0, 8, 0, 0), BackgroundTransparency = 1, Text = default, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = DropBtn })
                 local Chevron = Create("TextLabel", { Size = UDim2.new(0, 20, 1, 0), Position = UDim2.new(1, -20, 0, 0), BackgroundTransparency = 1, Text = "v", TextColor3 = Library.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 12, Parent = DropBtn })
 
                 local Scroll = Create("ScrollingFrame", { Size = UDim2.new(1, -20, 0, 0), Position = UDim2.new(0, 10, 0, 48), BackgroundColor3 = Library.Theme.ElementBg, ScrollBarThickness = 0, Parent = DFrame })
                 Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = Scroll })
                 Create("UIStroke", { Color = Library.Theme.Border, Parent = Scroll })
-                local SLayout = Create("UIListLayout", { Parent = Scroll })
+                Create("UIListLayout", { Parent = Scroll })
 
                 local open = false
                 local function toggle()
@@ -1221,6 +1448,127 @@ function Library:CreateWindow(titleText)
                         list = newList
                         populate(newList)
                         if newDef then setDrop(newDef) end 
+                    end
+                }
+            end
+
+            function SectionObj:CreateMultiDropdown(name, list, defaultTable, callback)
+                local id = tabName .. "_" .. name
+                local selectedMap = {}
+                if type(defaultTable) == "table" then
+                    for _, v in ipairs(defaultTable) do selectedMap[v] = true end
+                end
+
+                local function getSelectedArray()
+                    local arr = {}
+                    for _, opt in ipairs(list) do
+                        if selectedMap[opt] then table.insert(arr, opt) end
+                    end
+                    return arr
+                end
+
+                local function formatDisplay()
+                    local arr = getSelectedArray()
+                    return #arr > 0 and table.concat(arr, ", ") or "None"
+                end
+
+                Library.Registry[id] = {Value = getSelectedArray(), Type = "MultiDropdown"}
+
+                local DFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1, ClipsDescendants = true, Parent = ElementContainer })
+                Create("TextLabel", { Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 10, 0, 2), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, Parent = DFrame })
+                
+                local DropBtn = Create("TextButton", { Size = UDim2.new(1, -20, 0, 24), Position = UDim2.new(0, 10, 0, 20), BackgroundColor3 = Library.Theme.ElementBg, Text = "", AutoButtonColor = false, Parent = DFrame })
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = DropBtn })
+                Create("UIStroke", { Color = Library.Theme.Border, Parent = DropBtn })
+
+                local SelectedText = Create("TextLabel", { Size = UDim2.new(1, -30, 1, 0), Position = UDim2.new(0, 8, 0, 0), BackgroundTransparency = 1, Text = formatDisplay(), TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextTruncate = Enum.TextTruncate.AtEnd, Parent = DropBtn })
+                local Chevron = Create("TextLabel", { Size = UDim2.new(0, 20, 1, 0), Position = UDim2.new(1, -20, 0, 0), BackgroundTransparency = 1, Text = "v", TextColor3 = Library.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 12, Parent = DropBtn })
+
+                local Scroll = Create("ScrollingFrame", { Size = UDim2.new(1, -20, 0, 0), Position = UDim2.new(0, 10, 0, 48), BackgroundColor3 = Library.Theme.ElementBg, ScrollBarThickness = 0, Parent = DFrame })
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = Scroll })
+                Create("UIStroke", { Color = Library.Theme.Border, Parent = Scroll })
+                Create("UIListLayout", { Parent = Scroll })
+
+                local optionButtons = {}
+                local open = false
+                local function toggle()
+                    open = not open
+                    Chevron.Rotation = open and 180 or 0
+                    local targetHeight = open and math.clamp(#list * 24, 0, 120) or 0
+                    TS:Create(Scroll, TweenInfo.new(0.2), {Size = UDim2.new(1, -20, 0, targetHeight)}):Play()
+                    
+                    local newFrameHeight = 48 + targetHeight + (open and 5 or 0)
+                    TS:Create(DFrame, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, newFrameHeight)}):Play()
+                    
+                    for _, el in ipairs(TabObj.Sections[SectionFrame].Elements) do
+                        if el.Name == name then el.OrigH = newFrameHeight end
+                    end
+                end
+                DropBtn.MouseButton1Click:Connect(toggle)
+
+                local function refreshVisuals()
+                    SelectedText.Text = formatDisplay()
+                    for opt, btn in pairs(optionButtons) do
+                        if btn and btn.Parent then
+                            local active = selectedMap[opt] == true
+                            btn.TextColor3 = active and Library.Theme.Accent or Library.Theme.Text
+                            btn.Font = active and Enum.Font.GothamBold or Enum.Font.Gotham
+                        end
+                    end
+                end
+                table.insert(Library.AccentCallbacks, refreshVisuals)
+
+                local function populate(arr)
+                    for _, c in pairs(Scroll:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+                    table.clear(optionButtons)
+                    Scroll.CanvasSize = UDim2.new(0, 0, 0, #arr * 24)
+                    for _, opt in ipairs(arr) do
+                        local active = selectedMap[opt] == true
+                        local btn = Create("TextButton", {
+                            Size = UDim2.new(1, 0, 0, 24),
+                            BackgroundTransparency = 1,
+                            Text = "  " .. opt,
+                            TextColor3 = active and Library.Theme.Accent or Library.Theme.Text,
+                            Font = active and Enum.Font.GothamBold or Enum.Font.Gotham,
+                            TextSize = 12,
+                            TextXAlignment = Enum.TextXAlignment.Left,
+                            Parent = Scroll
+                        })
+                        optionButtons[opt] = btn
+                        btn.MouseButton1Click:Connect(function()
+                            selectedMap[opt] = not selectedMap[opt]
+                            local arrVal = getSelectedArray()
+                            Library.Registry[id].Value = arrVal
+                            refreshVisuals()
+                            callback(arrVal)
+                        end)
+                    end
+                end
+                populate(list)
+
+                local function setMulti(newArr)
+                    table.clear(selectedMap)
+                    if type(newArr) == "table" then
+                        for _, v in ipairs(newArr) do selectedMap[v] = true end
+                    end
+                    local arrVal = getSelectedArray()
+                    Library.Registry[id].Value = arrVal
+                    refreshVisuals()
+                    callback(arrVal)
+                end
+                Library.Registry[id].Set = setMulti
+
+                RegEl(name, DFrame, 48)
+
+                return {
+                    Set = setMulti,
+                    Refresh = function(_, newList, newDef)
+                        list = newList
+                        if newDef then
+                            setMulti(newDef)
+                        end
+                        populate(newList)
+                        refreshVisuals()
                     end
                 }
             end
@@ -1295,8 +1643,8 @@ function Library:CreateWindow(titleText)
                 end
 
                 Hitbox.InputBegan:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true updateSlider(input) end end)
-                UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
-                UIS.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end end)
+                TrackConn(UIS.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end))
+                TrackConn(UIS.InputChanged:Connect(function(input) if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then updateSlider(input) end end))
 
                 RegEl(name, SFrame, 45)
                 return { Set = setSlider }
@@ -1318,6 +1666,10 @@ function Library:CreateWindow(titleText)
                 
                 Library.Registry[id] = {Value = defaultName, Type = "Keybind"}
 
+                local kbEntry = { Name = name, Key = defaultName }
+                table.insert(WindowObj.KeybindEntries, kbEntry)
+                RefreshKeybindList()
+
                 local KFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1, Parent = ElementContainer })
                 Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = KFrame })
                 
@@ -1330,6 +1682,8 @@ function Library:CreateWindow(titleText)
                 local function setKey(newKeyStr)
                     BindBtn.Text = newKeyStr
                     Library.Registry[id].Value = newKeyStr
+                    kbEntry.Key = newKeyStr
+                    RefreshKeybindList()
                     
                     local parsedKey = nil
                     if newKeyStr:match("MB") then
@@ -1353,7 +1707,7 @@ function Library:CreateWindow(titleText)
                     TS:Create(BindBtn, TweenInfo.new(0.15), {TextTransparency = 0}):Play()
                 end)
 
-                UIS.InputBegan:Connect(function(input, gp)
+                TrackConn(UIS.InputBegan:Connect(function(input, gp)
                     if listening then
                         local key = input.KeyCode
                         local type = input.UserInputType
@@ -1386,7 +1740,7 @@ function Library:CreateWindow(titleText)
                             callback(currentKey, true)
                         end
                     end
-                end)
+                end))
 
                 RegEl(name, KFrame, 32)
                 return { Set = setKey }
@@ -1424,6 +1778,10 @@ function Library:CreateWindow(titleText)
         end
     end)
 
+    VisualsSec:CreateToggle("Show Keybind List", false, function(v)
+        KeybindListWin:SetVisible(v)
+    end)
+
     VisualsSec:CreateColorPicker("UI Accent Color", Library.Theme.Accent, function(color)
         UpdateAccent(color)
     end)
@@ -1432,6 +1790,10 @@ function Library:CreateWindow(titleText)
         if isPressed then
             ToggleWindowVisibility()
         end
+    end)
+
+    VisualsSec:CreateButton("Unload UI", function()
+        WindowObj:Unload()
     end)
 
     local ConfigSec = ConfigTab:CreateSection("Config Manager", "Right")
