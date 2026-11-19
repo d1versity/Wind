@@ -1,4 +1,4 @@
--- Wind by d1versity / Ege | v2.6
+-- Wind by d1versity / Ege | v2.7
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -561,7 +561,7 @@ function Library:CreateWindow(titleText)
             Parent = MiniInner
         })
 
-        -- Header (Left Accent Line + Wind Logo, Centered Title)
+        -- Header (Left Wind Logo, Centered Title)
         local Header = Create("Frame", {
             Size = UDim2.new(1, 0, 0, 32),
             BackgroundTransparency = 1,
@@ -569,18 +569,9 @@ function Library:CreateWindow(titleText)
             Parent = MiniInner
         })
 
-        local HeaderLine = RegisterAccent(Create("Frame", {
-            Size = UDim2.new(0, 2, 0, 14),
-            Position = UDim2.new(0, 10, 0.5, -7),
-            BackgroundColor3 = Library.Theme.Accent,
-            BorderSizePixel = 0,
-            Parent = Header
-        }), "BackgroundColor3")
-        Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = HeaderLine })
-
         RegisterAccent(Create("ImageLabel", {
             Size = UDim2.new(0, 16, 0, 16),
-            Position = UDim2.new(0, 18, 0.5, -8),
+            Position = UDim2.new(0, 10, 0.5, -8),
             BackgroundTransparency = 1,
             Image = GetLucideIcon("wind"),
             ImageColor3 = Library.Theme.Accent,
@@ -588,7 +579,7 @@ function Library:CreateWindow(titleText)
         }), "ImageColor3")
 
         local HeaderTitle = Create("TextLabel", {
-            Size = UDim2.new(1, -80, 1, 0),
+            Size = UDim2.new(1, -64, 1, 0),
             Position = UDim2.new(0.5, 0, 0, 0),
             AnchorPoint = Vector2.new(0.5, 0),
             BackgroundTransparency = 1,
@@ -784,11 +775,10 @@ function Library:CreateWindow(titleText)
             MiniObj.IsVisible = state
             if state then
                 MiniOuter.Visible = true
-                FadeUI(MiniOuter, false, 0)
-                FadeUI(MiniOuter, true, 0.25)
+                FadeUI(MiniOuter, true, 0.3)
             else
-                FadeUI(MiniOuter, false, 0.25)
-                task.delay(0.25, function()
+                FadeUI(MiniOuter, false, 0.3)
+                task.delay(0.3, function()
                     if not MiniObj.IsVisible then MiniOuter.Visible = false end
                 end)
             end
@@ -796,6 +786,12 @@ function Library:CreateWindow(titleText)
 
         function MiniObj:Destroy()
             MiniOuter:Destroy()
+        end
+
+        if not startVisible then
+            MiniOuter.Visible = true
+            FadeUI(MiniOuter, false, 0)
+            MiniOuter.Visible = false
         end
 
         return MiniObj
