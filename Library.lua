@@ -1,4 +1,4 @@
--- Wind by d1versity / Ege | v2.6
+-- Wind by d1versity / Ege | v2.7
 -- Prolly the coolest UI I have ever made
 
 local Library = {
@@ -66,6 +66,17 @@ local function UpdateAccent(newColor)
     for _, cb in ipairs(Library.AccentCallbacks) do
         pcall(cb, newColor)
     end
+end
+
+local function SmoothSetText(lbl, newText)
+    if not lbl or not lbl.Parent or lbl.Text == newText then return end
+    TS:Create(lbl, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play()
+    task.delay(0.12, function()
+        if lbl and lbl.Parent then
+            lbl.Text = newText
+            TS:Create(lbl, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+        end
+    end)
 end
 
 local function GetLucideIcon(iconName)
@@ -373,46 +384,36 @@ local function PlayOutro(accentColor, onMidpointUnload)
     Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = WipeLine })
 
     task.spawn(function()
-        -- 1. Fade screen to pitch black
         TS:Create(OutroOverlay, TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
         task.wait(0.9)
 
-        -- 2. Completely unload UI and user script hooks while screen is pitch black
         if onMidpointUnload then pcall(onMidpointUnload) end
 
-        -- 3. Fade in Wind icon at the center
         TS:Create(OutroIcon, TweenInfo.new(0.6, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {ImageTransparency = 0}):Play()
         task.wait(0.75)
 
-        -- 4. Slide icon slightly to the left
         TS:Create(OutroIcon, TweenInfo.new(0.75, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Position = UDim2.new(0, 58, 0.5, 0)}):Play()
         task.wait(0.3)
 
-        -- 5. Fade in "See you next time." (no subtitle)
         TS:Create(ByeLabel, TweenInfo.new(0.65, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
             TextTransparency = 0,
             Position = UDim2.new(0, 98, 0.5, 0)
         }):Play()
         task.wait(1.2)
 
-        -- 6. Animate rounded accent line growing from bottom to top
         TS:Create(WipeLine, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {Size = UDim2.new(0, 4, 0, 84)}):Play()
         task.wait(0.55)
 
-        -- 7. Sweep line across from right to left, wiping out the text and icon smoothly
         local wipeInfo = TweenInfo.new(0.9, Enum.EasingStyle.Cubic, Enum.EasingDirection.InOut)
         TS:Create(WipeLine, wipeInfo, {Position = UDim2.new(0.5, -190, 0.5, 42)}):Play()
         TS:Create(ClipContainer, wipeInfo, {Size = UDim2.new(0, 0, 0, 100)}):Play()
         task.wait(1.0)
 
-        -- 8. Shrink line smoothly from top to bottom
         TS:Create(WipeLine, TweenInfo.new(0.5, Enum.EasingStyle.Cubic, Enum.EasingDirection.In), {Size = UDim2.new(0, 4, 0, 0)}):Play()
         task.wait(0.55)
 
-        -- Pause on the black screen before fading out
         task.wait(0.5)
 
-        -- 9. Fade out black overlay and destroy outro container
         TS:Create(OutroOverlay, TweenInfo.new(0.85, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 1}):Play()
         task.wait(0.85)
         OutroGui:Destroy()
@@ -629,13 +630,11 @@ function Library:CreateWindow(titleText)
         PlayOutro(currentAccent, function()
             WindowObj.Unloaded = true
 
-            -- 1. Disconnect all UI and user-tracked connections
             for _, conn in ipairs(Library.Connections) do
                 pcall(function() conn:Disconnect() end)
             end
             table.clear(Library.Connections)
 
-            -- 2. Turn off all active toggles cleanly
             WindowObj.IsLoadingConfig = true
             for _, entry in pairs(Library.Registry) do
                 if entry.Type == "Toggle" and entry.Value == true and entry.Set then
@@ -643,13 +642,11 @@ function Library:CreateWindow(titleText)
                 end
             end
 
-            -- 3. Execute all user OnUnload cleanup callbacks
             for _, cb in ipairs(WindowObj.UnloadCallbacks) do
                 pcall(cb)
             end
             table.clear(WindowObj.UnloadCallbacks)
 
-            -- 4. Destroy all user-tracked instances (ESP, Highlights, Parts, etc.)
             for _, inst in ipairs(WindowObj.TrackedInstances) do
                 pcall(function()
                     if typeof(inst) == "Instance" then
@@ -663,7 +660,6 @@ function Library:CreateWindow(titleText)
             end
             table.clear(WindowObj.TrackedInstances)
 
-            -- 5. Clear registries and destroy main ScreenGui
             table.clear(Library.Registry)
             table.clear(Library.AccentObjects)
             table.clear(Library.AccentCallbacks)
@@ -724,12 +720,12 @@ function Library:CreateWindow(titleText)
         local startVisible = config.Visible == true
 
         local MiniOuter = Create("Frame", {
-            Size = UDim2.new(0, width, 0, 0),
+            Size = UDim2.new(0, width, 0, 58),
             Position = pos,
             BackgroundColor3 = Library.Theme.OuterBorder,
             BackgroundTransparency = 0.4,
             BorderSizePixel = 0,
-            AutomaticSize = Enum.AutomaticSize.Y,
+            ClipsDescendants = true,
             Visible = startVisible,
             Parent = sg
         })
@@ -738,26 +734,19 @@ function Library:CreateWindow(titleText)
         MakeSmoothDraggable(MiniOuter, MiniOuter)
 
         local MiniInner = Create("Frame", {
-            Size = UDim2.new(1, 0, 0, 0),
+            Size = UDim2.new(1, 0, 1, 0),
             BackgroundColor3 = Library.Theme.MainBg,
             BorderSizePixel = 0,
-            AutomaticSize = Enum.AutomaticSize.Y,
+            ClipsDescendants = true,
             Parent = MiniOuter
         })
         Create("UICorner", { CornerRadius = UDim.new(0, 8), Parent = MiniInner })
         Create("UIStroke", { Color = Library.Theme.Border, Thickness = 1, Parent = MiniInner })
 
-        Create("UIListLayout", {
-            FillDirection = Enum.FillDirection.Vertical,
-            SortOrder = Enum.SortOrder.LayoutOrder,
-            Parent = MiniInner
-        })
-
         -- Header (Left Wind Logo, Centered Title)
         local Header = Create("Frame", {
             Size = UDim2.new(1, 0, 0, 32),
             BackgroundTransparency = 1,
-            LayoutOrder = 0,
             Parent = MiniInner
         })
 
@@ -794,14 +783,48 @@ function Library:CreateWindow(titleText)
 
         -- Content Body
         local Body = Create("Frame", {
-            Size = UDim2.new(1, 0, 0, 0),
+            Size = UDim2.new(1, 0, 1, -32),
+            Position = UDim2.new(0, 0, 0, 32),
             BackgroundTransparency = 1,
-            AutomaticSize = Enum.AutomaticSize.Y,
-            LayoutOrder = 1,
             Parent = MiniInner
         })
         Create("UIPadding", { PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), Parent = Body })
-        Create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = Body })
+        local BodyLayout = Create("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = Body })
+
+        local MiniObj = { Frame = MiniOuter, Body = Body, IsVisible = startVisible }
+
+        local function UpdateMiniSize(instant)
+            local targetH = 58 + BodyLayout.AbsoluteContentSize.Y
+            if instant or not MiniOuter.Visible then
+                MiniOuter.Size = UDim2.new(0, width, 0, targetH)
+            else
+                TS:Create(MiniOuter, TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+                    Size = UDim2.new(0, width, 0, targetH)
+                }):Play()
+            end
+        end
+        BodyLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            UpdateMiniSize(false)
+        end)
+
+        local function SmoothAppear(inst)
+            if MiniObj.IsVisible then
+                FadeUI(inst, false, 0)
+                FadeUI(inst, true, 0.25)
+            end
+        end
+
+        local function SmoothDestroy(inst)
+            if not inst or not inst.Parent then return end
+            if MiniObj.IsVisible then
+                FadeUI(inst, false, 0.2)
+                task.delay(0.2, function()
+                    if inst and inst.Parent then inst:Destroy() end
+                end)
+            else
+                inst:Destroy()
+            end
+        end
 
         local function AttachBuilders(targetObj, parentFrame, isHorizontal)
             local itemOrder = 0
@@ -821,10 +844,12 @@ function Library:CreateWindow(titleText)
                     Parent = parentFrame
                 })
                 if isCircle then Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = img }) end
+                if not isHorizontal then SmoothAppear(img) end
                 return {
                     Object = img,
                     Set = function(_, newImg) img.Image = GetLucideIcon(newImg) end,
-                    SetColor = function(_, col) img.ImageColor3 = col end
+                    SetColor = function(_, col) img.ImageColor3 = col end,
+                    Destroy = function() SmoothDestroy(img) end
                 }
             end
 
@@ -844,10 +869,12 @@ function Library:CreateWindow(titleText)
                     LayoutOrder = nextOrder(),
                     Parent = parentFrame
                 })
+                if not isHorizontal then SmoothAppear(lbl) end
                 return {
                     Object = lbl,
                     Set = function(_, newText) lbl.Text = tostring(newText or "") end,
-                    SetColor = function(_, col) lbl.TextColor3 = col end
+                    SetColor = function(_, col) lbl.TextColor3 = col end,
+                    Destroy = function() SmoothDestroy(lbl) end
                 }
             end
 
@@ -861,7 +888,8 @@ function Library:CreateWindow(titleText)
                     Parent = parentFrame
                 }), "BackgroundColor3")
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = div })
-                return { Object = div }
+                if not isHorizontal then SmoothAppear(div) end
+                return { Object = div, Destroy = function() SmoothDestroy(div) end }
             end
 
             function targetObj:AddButton(text, callback)
@@ -890,9 +918,11 @@ function Library:CreateWindow(titleText)
                     if callback then callback() end
                 end)
 
+                if not isHorizontal then SmoothAppear(btn) end
                 return {
                     Object = btn,
-                    Set = function(_, newText) btn.Text = newText end
+                    Set = function(_, newText) btn.Text = newText end,
+                    Destroy = function() SmoothDestroy(btn) end
                 }
             end
 
@@ -915,12 +945,14 @@ function Library:CreateWindow(titleText)
                 }), "BackgroundColor3")
                 Create("UICorner", { CornerRadius = UDim.new(1, 0), Parent = fill })
 
+                if not isHorizontal then SmoothAppear(track) end
                 return {
                     Object = track,
                     Set = function(_, newPct)
                         local c = math.clamp(newPct or 0, 0, 1)
                         TS:Create(fill, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(c, 0, 1, 0)}):Play()
-                    end
+                    end,
+                    Destroy = function() SmoothDestroy(track) end
                 }
             end
 
@@ -934,15 +966,16 @@ function Library:CreateWindow(titleText)
             end
         end
 
-        local MiniObj = { Frame = MiniOuter, IsVisible = startVisible }
         AttachBuilders(MiniObj, Body, false)
 
+        local rowOrderCounter = 0
         function MiniObj:AddRow(padding)
+            rowOrderCounter = rowOrderCounter + 1
             local rowFrame = Create("Frame", {
                 Size = UDim2.new(1, 0, 0, 0),
                 BackgroundTransparency = 1,
                 AutomaticSize = Enum.AutomaticSize.Y,
-                LayoutOrder = #Body:GetChildren(),
+                LayoutOrder = rowOrderCounter,
                 Parent = Body
             })
             Create("UIListLayout", {
@@ -955,7 +988,14 @@ function Library:CreateWindow(titleText)
 
             local RowObj = { Frame = rowFrame }
             AttachBuilders(RowObj, rowFrame, true)
-            function RowObj:Destroy() rowFrame:Destroy() end
+            function RowObj:Destroy() SmoothDestroy(rowFrame) end
+
+            task.defer(function()
+                if rowFrame and rowFrame.Parent then
+                    SmoothAppear(rowFrame)
+                end
+            end)
+
             return RowObj
         end
 
@@ -966,6 +1006,7 @@ function Library:CreateWindow(titleText)
         function MiniObj:SetVisible(state)
             MiniObj.IsVisible = state
             if state then
+                UpdateMiniSize(true)
                 MiniOuter.Visible = true
                 FadeUI(MiniOuter, true, 0.3)
             else
@@ -989,38 +1030,109 @@ function Library:CreateWindow(titleText)
         return MiniObj
     end
 
-    -- [ BUILT-IN KEYBIND LIST MINI WINDOW ]
+    -- [ BUILT-IN INTERACTIVE KEYBIND LIST MINI WINDOW ]
     local KeybindListWin = WindowObj:CreateMiniWindow({
         Title = "Keybinds",
-        Width = 220,
+        Width = 230,
         Position = UDim2.new(0, 50, 0, 110),
         Visible = false
     })
 
-    local function RefreshKeybindList()
-        KeybindListWin:Clear()
-        local hasAny = false
-        for _, kb in ipairs(WindowObj.KeybindEntries) do
-            if kb.Key ~= "None" and kb.Name ~= "UI Toggle Keybind" then
-                hasAny = true
-                local row = Create("Frame", {
-                    Size = UDim2.new(1, 0, 0, 20),
-                    BackgroundTransparency = 1,
-                    Parent = KeybindListWin.Frame:FindFirstChildWhichIsA("Frame"):FindFirstChild("Frame", true) or KeybindListWin.Frame
-                })
-                -- Use MiniWindow's built-in AddText with RichText for clean left/right alignment
-                row:Destroy()
-                local r = KeybindListWin:AddRow(4)
-                r:AddText(kb.Name, { Size = 11 })
-                r:AddText("[" .. kb.Key .. "]", { Bold = true, Size = 11, Color = Library.Theme.Accent })
+    local kbRows = {}
+    local emptyKbLabel = nil
+
+    local function UpdateEmptyKbPlaceholder()
+        local count = 0
+        for _ in pairs(kbRows) do count = count + 1 end
+        if count == 0 then
+            if not emptyKbLabel then
+                emptyKbLabel = KeybindListWin:AddText("No active keybinds.", { SubText = true, Size = 11, Align = Enum.TextXAlignment.Center })
+            end
+        else
+            if emptyKbLabel then
+                emptyKbLabel:Destroy()
+                emptyKbLabel = nil
             end
         end
-        if not hasAny then
-            KeybindListWin:AddText("No active keybinds.", { SubText = true, Size = 11, Align = Enum.TextXAlignment.Center })
-        end
     end
-    table.insert(Library.AccentCallbacks, RefreshKeybindList)
-    RefreshKeybindList()
+
+    local function SyncKeybindEntry(kbEntry)
+        if kbEntry.Name == "UI Toggle Keybind" then return end
+
+        local existing = kbRows[kbEntry]
+        if kbEntry.Key ~= "None" then
+            if not existing then
+                local rowFrame = Create("Frame", {
+                    Size = UDim2.new(1, 0, 0, 22),
+                    BackgroundTransparency = 1,
+                    Parent = KeybindListWin.Body
+                })
+                Create("UIListLayout", {
+                    FillDirection = Enum.FillDirection.Horizontal,
+                    VerticalAlignment = Enum.VerticalAlignment.Center,
+                    Padding = UDim.new(0, 8),
+                    SortOrder = Enum.SortOrder.LayoutOrder,
+                    Parent = rowFrame
+                })
+
+                local MiniBindBtn = RegisterAccent(Create("TextButton", {
+                    Size = UDim2.new(0, 54, 0, 20),
+                    BackgroundColor3 = Library.Theme.ElementBg,
+                    Text = kbEntry.Key,
+                    TextColor3 = Library.Theme.Accent,
+                    Font = Enum.Font.GothamBold,
+                    TextSize = 11,
+                    AutoButtonColor = false,
+                    LayoutOrder = 1,
+                    Parent = rowFrame
+                }), "TextColor3")
+                Create("UICorner", { CornerRadius = UDim.new(0, 4), Parent = MiniBindBtn })
+                Create("UIStroke", { Color = Library.Theme.Border, Parent = MiniBindBtn })
+
+                Create("TextLabel", {
+                    Size = UDim2.new(1, -62, 1, 0),
+                    BackgroundTransparency = 1,
+                    Text = kbEntry.Name,
+                    TextColor3 = Library.Theme.Text,
+                    Font = Enum.Font.Gotham,
+                    TextSize = 12,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                    TextTruncate = Enum.TextTruncate.AtEnd,
+                    LayoutOrder = 2,
+                    Parent = rowFrame
+                })
+
+                MiniBindBtn.MouseButton1Click:Connect(function()
+                    if kbEntry.StartListening then kbEntry.StartListening() end
+                end)
+
+                kbRows[kbEntry] = { Frame = rowFrame, Btn = MiniBindBtn }
+                if KeybindListWin.IsVisible then
+                    FadeUI(rowFrame, false, 0)
+                    FadeUI(rowFrame, true, 0.25)
+                end
+            else
+                SmoothSetText(existing.Btn, kbEntry.Key)
+            end
+        else
+            if existing then
+                local f = existing.Frame
+                kbRows[kbEntry] = nil
+                if KeybindListWin.IsVisible then
+                    FadeUI(f, false, 0.2)
+                    task.delay(0.2, function()
+                        if f and f.Parent then f:Destroy() end
+                    end)
+                else
+                    f:Destroy()
+                end
+            end
+        end
+
+        UpdateEmptyKbPlaceholder()
+    end
+
+    UpdateEmptyKbPlaceholder()
 
     local CPBg = Create("TextButton", { Size = UDim2.new(1, 0, 1, 0), BackgroundColor3 = Color3.fromRGB(0, 0, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, Visible = false, ZIndex = 50, Parent = MainFrame })
     local CPWindow = Create("Frame", { Size = UDim2.new(0, 240, 0, 350), Position = UDim2.new(0.5, -120, 0.5, -175), BackgroundColor3 = Library.Theme.MainBg, ZIndex = 51, Parent = CPBg })
@@ -1384,7 +1496,8 @@ function Library:CreateWindow(titleText)
 
             function SectionObj:CreateDropdown(name, list, default, callback)
                 local id = tabName .. "_" .. name
-                Library.Registry[id] = {Value = default, Type = "Dropdown"}
+                local currentVal = default
+                Library.Registry[id] = {Value = currentVal, Type = "Dropdown"}
                 
                 local DFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1, ClipsDescendants = true, Parent = ElementContainer })
                 Create("TextLabel", { Size = UDim2.new(1, -20, 0, 20), Position = UDim2.new(0, 10, 0, 2), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.SubText, Font = Enum.Font.Gotham, TextSize = 11, TextXAlignment = Enum.TextXAlignment.Left, Parent = DFrame })
@@ -1401,6 +1514,7 @@ function Library:CreateWindow(titleText)
                 Create("UIStroke", { Color = Library.Theme.Border, Parent = Scroll })
                 Create("UIListLayout", { Parent = Scroll })
 
+                local optionButtons = {}
                 local open = false
                 local function toggle()
                     open = not open
@@ -1415,17 +1529,43 @@ function Library:CreateWindow(titleText)
                         if el.Name == name then el.OrigH = newFrameHeight end
                     end
                 end
-
                 DropBtn.MouseButton1Click:Connect(toggle)
+
+                local function refreshOptionColors()
+                    for opt, btn in pairs(optionButtons) do
+                        if btn and btn.Parent then
+                            local active = (opt == currentVal)
+                            TS:Create(btn, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                                TextColor3 = active and Library.Theme.Accent or Library.Theme.Text
+                            }):Play()
+                            btn.Font = active and Enum.Font.GothamBold or Enum.Font.Gotham
+                        end
+                    end
+                end
+                table.insert(Library.AccentCallbacks, refreshOptionColors)
 
                 local function populate(arr)
                     for _, c in pairs(Scroll:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
+                    table.clear(optionButtons)
                     Scroll.CanvasSize = UDim2.new(0, 0, 0, #arr * 24)
                     for _, opt in ipairs(arr) do
-                        local btn = Create("TextButton", { Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1, Text = "  " .. opt, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = Scroll })
+                        local active = (opt == currentVal)
+                        local btn = Create("TextButton", {
+                            Size = UDim2.new(1, 0, 0, 24),
+                            BackgroundTransparency = 1,
+                            Text = "  " .. opt,
+                            TextColor3 = active and Library.Theme.Accent or Library.Theme.Text,
+                            Font = active and Enum.Font.GothamBold or Enum.Font.Gotham,
+                            TextSize = 12,
+                            TextXAlignment = Enum.TextXAlignment.Left,
+                            Parent = Scroll
+                        })
+                        optionButtons[opt] = btn
                         btn.MouseButton1Click:Connect(function()
-                            SelectedText.Text = opt
+                            currentVal = opt
+                            SmoothSetText(SelectedText, opt)
                             Library.Registry[id].Value = opt
+                            refreshOptionColors()
                             toggle()
                             callback(opt)
                         end)
@@ -1434,8 +1574,10 @@ function Library:CreateWindow(titleText)
                 populate(list)
 
                 local function setDrop(val)
-                    SelectedText.Text = val
+                    currentVal = val
+                    SmoothSetText(SelectedText, val)
                     Library.Registry[id].Value = val
+                    refreshOptionColors()
                     callback(val) 
                 end
                 Library.Registry[id].Set = setDrop
@@ -1506,17 +1648,23 @@ function Library:CreateWindow(titleText)
                 end
                 DropBtn.MouseButton1Click:Connect(toggle)
 
-                local function refreshVisuals()
-                    SelectedText.Text = formatDisplay()
+                local function refreshVisuals(animateText)
+                    if animateText then
+                        SmoothSetText(SelectedText, formatDisplay())
+                    else
+                        SelectedText.Text = formatDisplay()
+                    end
                     for opt, btn in pairs(optionButtons) do
                         if btn and btn.Parent then
                             local active = selectedMap[opt] == true
-                            btn.TextColor3 = active and Library.Theme.Accent or Library.Theme.Text
+                            TS:Create(btn, TweenInfo.new(0.22, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                                TextColor3 = active and Library.Theme.Accent or Library.Theme.Text
+                            }):Play()
                             btn.Font = active and Enum.Font.GothamBold or Enum.Font.Gotham
                         end
                     end
                 end
-                table.insert(Library.AccentCallbacks, refreshVisuals)
+                table.insert(Library.AccentCallbacks, function() refreshVisuals(false) end)
 
                 local function populate(arr)
                     for _, c in pairs(Scroll:GetChildren()) do if c:IsA("TextButton") then c:Destroy() end end
@@ -1539,7 +1687,7 @@ function Library:CreateWindow(titleText)
                             selectedMap[opt] = not selectedMap[opt]
                             local arrVal = getSelectedArray()
                             Library.Registry[id].Value = arrVal
-                            refreshVisuals()
+                            refreshVisuals(true)
                             callback(arrVal)
                         end)
                     end
@@ -1553,7 +1701,7 @@ function Library:CreateWindow(titleText)
                     end
                     local arrVal = getSelectedArray()
                     Library.Registry[id].Value = arrVal
-                    refreshVisuals()
+                    refreshVisuals(true)
                     callback(arrVal)
                 end
                 Library.Registry[id].Set = setMulti
@@ -1564,11 +1712,9 @@ function Library:CreateWindow(titleText)
                     Set = setMulti,
                     Refresh = function(_, newList, newDef)
                         list = newList
-                        if newDef then
-                            setMulti(newDef)
-                        end
+                        if newDef then setMulti(newDef) end
                         populate(newList)
-                        refreshVisuals()
+                        refreshVisuals(false)
                     end
                 }
             end
@@ -1666,10 +1812,6 @@ function Library:CreateWindow(titleText)
                 
                 Library.Registry[id] = {Value = defaultName, Type = "Keybind"}
 
-                local kbEntry = { Name = name, Key = defaultName }
-                table.insert(WindowObj.KeybindEntries, kbEntry)
-                RefreshKeybindList()
-
                 local KFrame = Create("Frame", { Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1, Parent = ElementContainer })
                 Create("TextLabel", { Size = UDim2.new(1, -60, 1, 0), Position = UDim2.new(0, 10, 0, 0), BackgroundTransparency = 1, Text = name, TextColor3 = Library.Theme.Text, Font = Enum.Font.Gotham, TextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, Parent = KFrame })
                 
@@ -1678,12 +1820,26 @@ function Library:CreateWindow(titleText)
                 Create("UIStroke", { Color = Library.Theme.Border, Parent = BindBtn })
 
                 local listening = false
+                local kbEntry = { Name = name, Key = defaultName }
+
+                local function StartListening()
+                    if listening then return end
+                    listening = true
+                    SmoothSetText(BindBtn, "...")
+                    if kbRows[kbEntry] and kbRows[kbEntry].Btn then
+                        SmoothSetText(kbRows[kbEntry].Btn, "...")
+                    end
+                end
+                kbEntry.StartListening = StartListening
+
+                table.insert(WindowObj.KeybindEntries, kbEntry)
+                SyncKeybindEntry(kbEntry)
 
                 local function setKey(newKeyStr)
-                    BindBtn.Text = newKeyStr
+                    SmoothSetText(BindBtn, newKeyStr)
                     Library.Registry[id].Value = newKeyStr
                     kbEntry.Key = newKeyStr
-                    RefreshKeybindList()
+                    SyncKeybindEntry(kbEntry)
                     
                     local parsedKey = nil
                     if newKeyStr:match("MB") then
@@ -1698,14 +1854,7 @@ function Library:CreateWindow(titleText)
                 end
                 Library.Registry[id].Set = setKey
 
-                BindBtn.MouseButton1Click:Connect(function()
-                    if listening then return end
-                    listening = true
-                    TS:Create(BindBtn, TweenInfo.new(0.15), {TextTransparency = 1}):Play()
-                    task.wait(0.15)
-                    BindBtn.Text = "..."
-                    TS:Create(BindBtn, TweenInfo.new(0.15), {TextTransparency = 0}):Play()
-                end)
+                BindBtn.MouseButton1Click:Connect(StartListening)
 
                 TrackConn(UIS.InputBegan:Connect(function(input, gp)
                     if listening then
@@ -1727,10 +1876,7 @@ function Library:CreateWindow(titleText)
                             end
                             
                             listening = false
-                            TS:Create(BindBtn, TweenInfo.new(0.15), {TextTransparency = 1}):Play()
-                            task.wait(0.15)
                             setKey(newKeyStr)
-                            TS:Create(BindBtn, TweenInfo.new(0.15), {TextTransparency = 0}):Play()
                         end
                         return 
                     end
